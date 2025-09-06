@@ -213,39 +213,76 @@ export class PixelArt {
 
     const key = "coin";
     const size = COIN_SIZE;
-    const tex = scene.textures.createCanvas(key, size, size);
-    const c = tex.context;
-    c.clearRect(0, 0, size, size);
+    const canvas = scene.textures.createCanvas(key, size, size);
+    const c = canvas.context;
 
     // Create a circular coin shape
-    const center = size / 2;
+    const centerX = size / 2;
+    const centerY = size / 2;
     const radius = size / 2 - 2;
 
-    // Outer circle (dark gold)
     c.fillStyle = COIN.DARK;
     c.beginPath();
-    c.arc(center, center, radius, 0, 2 * Math.PI);
+    c.arc(centerX, centerY, radius, 0, 2 * Math.PI);
     c.fill();
 
-    // Inner circle (bright gold)
     c.fillStyle = COIN.GOLD;
     c.beginPath();
-    c.arc(center, center, radius - 2, 0, 2 * Math.PI);
+    c.arc(centerX, centerY, radius - 2, 0, 2 * Math.PI);
     c.fill();
 
-    // Highlight (light gold)
     c.fillStyle = COIN.LIGHT;
     c.beginPath();
-    c.arc(center - 2, center - 2, radius - 5, 0, 2 * Math.PI);
+    c.arc(centerX - 2, centerY - 2, radius - 4, 0, 2 * Math.PI);
     c.fill();
 
-    // Larger "$" symbol
     c.fillStyle = COIN.DARK;
-    c.fillRect(center - 2, center - 6, 4, 12);
-    c.fillRect(center - 4, center - 3, 8, 2);
-    c.fillRect(center - 4, center + 1, 8, 2);
+    c.fillRect(centerX - 3, centerY - 1, 6, 2);
+    c.fillRect(centerX - 1, centerY - 3, 2, 6);
 
-    tex.refresh();
+    canvas.refresh();
+  }
+
+  static makePixelHealthPackTexture(scene) {
+    const { HEALTH_PACK } = COLORS;
+    const { HEALTH_PACK_SIZE } = GAME_CONFIG;
+
+    const key = "healthpack";
+    const size = HEALTH_PACK_SIZE;
+    const canvas = scene.textures.createCanvas(key, size, size);
+    const c = canvas.context;
+
+    // Create a square health pack with a red cross
+    const centerX = size / 2;
+    const centerY = size / 2;
+
+    // Black border
+    c.fillStyle = HEALTH_PACK.BORDER;
+    c.fillRect(0, 0, size, size);
+
+    // White background
+    c.fillStyle = HEALTH_PACK.BASE;
+    c.fillRect(2, 2, size - 4, size - 4);
+
+    // Red cross - vertical bar
+    c.fillStyle = HEALTH_PACK.CROSS;
+    c.fillRect(centerX - 3, 4, 6, size - 8);
+
+    // Red cross - horizontal bar
+    c.fillStyle = HEALTH_PACK.CROSS;
+    c.fillRect(4, centerY - 3, size - 8, 6);
+
+    // Light highlights on cross
+    c.fillStyle = HEALTH_PACK.LIGHT;
+    c.fillRect(centerX - 2, 5, 2, size - 10); // Left side of vertical
+    c.fillRect(5, centerY - 2, size - 10, 2); // Top side of horizontal
+
+    // Dark shadows on cross
+    c.fillStyle = HEALTH_PACK.DARK;
+    c.fillRect(centerX + 1, 5, 2, size - 10); // Right side of vertical
+    c.fillRect(5, centerY + 1, size - 10, 2); // Bottom side of horizontal
+
+    canvas.refresh();
   }
 
   static preloadAllTextures(scene) {
@@ -259,5 +296,6 @@ export class PixelArt {
     PixelArt.makePixelPlayerTexture(scene);
     PixelArt.makePixelDebrisTexture(scene);
     PixelArt.makePixelCoinTexture(scene);
+    PixelArt.makePixelHealthPackTexture(scene);
   }
 }

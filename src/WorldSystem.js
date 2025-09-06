@@ -57,7 +57,7 @@ export class WorldSystem {
     this.topX = top.x;
   }
 
-  spawnPlatformAbove(coinSystem = null) {
+  spawnPlatformAbove(coinSystem = null, healthPackSystem = null) {
     const gap = Phaser.Math.Between(GAME_CONFIG.GAP_MIN, GAME_CONFIG.GAP_MAX);
     const reach = this.maxHorizontalReachForGap(gap);
 
@@ -91,6 +91,26 @@ export class WorldSystem {
         )} meters`
       );
       coinSystem.spawnRiskyCoin(this.topX, this.minY, nx, ny, gap, reach);
+    }
+
+    // Chance to spawn a health pack in a safe position
+    if (
+      healthPackSystem &&
+      Math.random() < GAME_CONFIG.HEALTH_PACK_SPAWN_CHANCE
+    ) {
+      console.log(
+        `Spawning health pack at height ${Math.floor(
+          (GAME_CONFIG.BASE_Y - ny) / 100
+        )} meters`
+      );
+      healthPackSystem.spawnHealthPack(
+        this.topX,
+        this.minY,
+        nx,
+        ny,
+        gap,
+        reach
+      );
     }
 
     this.minY = ny;
@@ -227,12 +247,17 @@ export class WorldSystem {
     return Math.max(best, 36);
   }
 
-  updateWorldStreaming(camera, player, coinSystem = null) {
+  updateWorldStreaming(
+    camera,
+    player,
+    coinSystem = null,
+    healthPackSystem = null
+  ) {
     const camTop = camera.scrollY;
 
     // Spawn new platforms ahead
     while (this.minY > camTop - GAME_CONFIG.SPAWN_AHEAD) {
-      this.spawnPlatformAbove(coinSystem);
+      this.spawnPlatformAbove(coinSystem, healthPackSystem);
     }
 
     // Recycle old platforms

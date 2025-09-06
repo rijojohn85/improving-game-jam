@@ -111,6 +111,32 @@ export class ScoringSystem {
     }
   }
 
+  collectHealthPack(audioSystem, scene) {
+    // Only collect if player is not at full health
+    if (this.health >= GAME_CONFIG.MAX_HEALTH) return;
+
+    if (audioSystem) {
+      audioSystem.sfxHealthPackCollect();
+    }
+
+    // Heal the player
+    const oldHealth = this.health;
+    this.setHealth(this.health + GAME_CONFIG.HEALTH_PACK_HEAL_AMOUNT);
+    const actualHealing = this.health - oldHealth;
+
+    // Add some score for collecting health pack
+    this.addScore(GAME_CONFIG.HEALTH_PACK_HEAL_AMOUNT);
+
+    if (scene) {
+      // Green flash to indicate healing
+      scene.cameras.main.flash(120, 100, 255, 100, false);
+    }
+
+    console.log(
+      `Health pack collected! Healed ${actualHealing} HP. Current health: ${this.health}`
+    );
+  }
+
   // Fall detection methods
   startFall(playerY) {
     if (!this.falling) {

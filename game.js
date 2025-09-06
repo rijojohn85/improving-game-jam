@@ -10,6 +10,7 @@ import { WorldSystem } from "./src/WorldSystem.js";
 import { Player } from "./src/Player.js";
 import { DebrisSystem } from "./src/DebrisSystem.js";
 import { CoinSystem } from "./src/CoinSystem.js";
+import { HealthPackSystem } from "./src/HealthPackSystem.js";
 
 (() => {
   const { WIDTH: W, HEIGHT: H } = GAME_CONFIG;
@@ -21,6 +22,7 @@ import { CoinSystem } from "./src/CoinSystem.js";
   const player = new Player();
   const debrisSystem = new DebrisSystem();
   const coinSystem = new CoinSystem();
+  const healthPackSystem = new HealthPackSystem();
 
   // Game configuration
   const config = {
@@ -85,6 +87,7 @@ import { CoinSystem } from "./src/CoinSystem.js";
     // Initialize debris and coin systems
     debrisSystem.initialize(scene);
     coinSystem.initialize(scene);
+    healthPackSystem.initialize(scene);
 
     // Setup all collision interactions
     debrisSystem.setupCollisions(
@@ -95,6 +98,7 @@ import { CoinSystem } from "./src/CoinSystem.js";
       scene
     );
     coinSystem.setupCollisions(player, scoringSystem, audioSystem, scene);
+    healthPackSystem.setupCollisions(player, scoringSystem, audioSystem, scene);
 
     // Setup camera
     const cam = this.cameras.main;
@@ -147,10 +151,12 @@ import { CoinSystem } from "./src/CoinSystem.js";
     worldSystem.updateWorldStreaming(
       this.cameras.main,
       playerState,
-      coinSystem
+      coinSystem,
+      healthPackSystem
     );
     debrisSystem.update(this);
     coinSystem.update(this);
+    healthPackSystem.update(this);
 
     // Update scoring and UI
     scoringSystem.checkHeightProgress(playerPos.y);

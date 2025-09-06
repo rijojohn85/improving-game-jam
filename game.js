@@ -37,7 +37,7 @@
   const BASE_Y = 680; // Ground level Y coordinate
 
   // Coin system
-  const COIN_SPAWN_CHANCE = 0.4; // 40% chance per platform to spawn a coin
+  const COIN_SPAWN_CHANCE = 0.7; // 70% chance per platform to spawn a coin
   const COIN_SIZE = 24; // Bigger coin size for visibility
 
   // Platform system
@@ -800,8 +800,8 @@
     coinsGroup.children.iterate((existingCoin) => {
       if (existingCoin && existingCoin.active) {
         const verticalDistance = Math.abs(existingCoin.y - (fromY - gap * 0.6));
-        if (verticalDistance < 200) {
-          // Minimum 200px vertical separation
+        if (verticalDistance < 120) {
+          // Minimum 120px vertical separation (reduced from 200px)
           tooClose = true;
         }
       }

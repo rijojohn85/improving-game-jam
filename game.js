@@ -33,6 +33,35 @@
 
   // Simple scoring system
   const POINTS_PER_METER = 10; // Points for height climbed
+  const COIN_POINTS = 50; // Points for collecting a coin
+
+  // Coin system
+  const COIN_SPAWN_CHANCE = 0.3; // 30% chance per platform to spawn a coin
+  const COIN_SIZE = 24; // Bigger coin size for visibility
+
+  // Platform system
+  const PLATFORM_SIZES = [
+    { width: 80, height: 18, key: "platform_small" },
+    { width: 120, height: 18, key: "platform_medium" },
+    { width: 160, height: 18, key: "platform_large" },
+  ];
+  const PLATFORM_WEIGHTS = [0.3, 0.5, 0.2]; // 30% small, 50% medium, 20% large
+
+  // Function to randomly select a platform size
+  function selectRandomPlatformSize() {
+    const random = Math.random();
+    let cumulativeWeight = 0;
+
+    for (let i = 0; i < PLATFORM_SIZES.length; i++) {
+      cumulativeWeight += PLATFORM_WEIGHTS[i];
+      if (random <= cumulativeWeight) {
+        return PLATFORM_SIZES[i];
+      }
+    }
+
+    // Fallback to medium size
+    return PLATFORM_SIZES[1];
+  }
 
   // --- Debris knobs (size + slower behavior) ---
   const DEBRIS_SCALE = 0.9; // SIZE KNOB (0.5 smaller … 2.0 larger)
@@ -222,6 +251,9 @@
   let lastHeight = 0;
   let scoreText;
 
+  // Coin system state
+  let coinsGroup;
+
   new Phaser.Game(config);
 
   // ---------- Pixel art helpers (procedural, blocky) ----------
@@ -272,36 +304,60 @@
     g.destroy();
   }
 
-  function makePixelPlatformTexture(scene) {
+  // Create platform textures with different sizes
+  function createPlatformTextures(scene) {
+    PLATFORM_SIZES.forEach((platformInfo) => {
+      makePixelPlatformTexture(
+        scene,
+        platformInfo.width,
+        platformInfo.height,
+        platformInfo.key
+      );
+    });
+  }
+
+  function makePixelPlatformTexture(
+    scene,
+    width = 120,
+    height = 18,
+    key = "platform"
+  ) {
     const g = scene.add.graphics();
     // Base block
     const base = 0x6b5846; // brownish rock
     g.fillStyle(base, 1);
-    g.fillRect(0, 0, 120, 18);
+    g.fillRect(0, 0, width, height);
 
     // Top highlight (2px)
     g.fillStyle(0x8e745c, 1);
-    g.fillRect(0, 0, 120, 2);
+    g.fillRect(0, 0, width, 2);
     // Bottom shadow (2px)
     g.fillStyle(0x4a3b2c, 1);
-    g.fillRect(0, 16, 120, 2);
+    g.fillRect(0, height - 2, width, 2);
 
-    // "Bricks" as 6x4 blocks
+    // "Bricks" as blocks proportional to platform size
     g.fillStyle(0x7a644f, 0.9);
-    for (let y = 3; y <= 12; y += 4) {
-      for (let x = y % 8 ? 6 : 3; x <= 114; x += 12) {
-        g.fillRect(x, y, 6, 4);
+    const blockWidth = Math.max(6, Math.floor(width / 20));
+    const blockHeight = Math.max(3, Math.floor(height / 6));
+    for (let y = 3; y <= height - 6; y += blockHeight + 1) {
+      for (
+        let x = y % 8 ? blockWidth : blockWidth / 2;
+        x <= width - blockWidth - 3;
+        x += blockWidth * 2
+      ) {
+        g.fillRect(x, y, blockWidth, blockHeight);
       }
     }
-    // Small pits
+    // Small pits proportional to platform size
     g.fillStyle(0x5a4738, 0.7);
-    for (let i = 0; i < 16; i++) {
-      const x = 4 + Math.floor(Math.random() * 112);
-      const y = 3 + Math.floor(Math.random() * 10);
+    const numPits = Math.floor(width / 8);
+    for (let i = 0; i < numPits; i++) {
+      const x = 4 + Math.floor(Math.random() * (width - 8));
+      const y = 3 + Math.floor(Math.random() * (height - 8));
       g.fillRect(x, y, 2, 2);
     }
 
-    g.generateTexture("platform", 120, 18);
+    g.generateTexture(key, width, height);
     g.destroy();
   }
 
@@ -392,14 +448,57 @@
     tex.refresh();
   }
 
+  function makePixelCoinTexture(scene) {
+    const key = "coin";
+    const size = COIN_SIZE;
+    const tex = scene.textures.createCanvas(key, size, size);
+    const c = tex.context;
+    c.clearRect(0, 0, size, size);
+
+    // Gold colors
+    const GOLD = "#FFD700";
+    const GOLD_LIGHT = "#FFED4E";
+    const GOLD_DARK = "#B8860B";
+
+    // Create a circular coin shape
+    const center = size / 2;
+    const radius = size / 2 - 2;
+
+    // Outer circle (dark gold)
+    c.fillStyle = GOLD_DARK;
+    c.beginPath();
+    c.arc(center, center, radius, 0, 2 * Math.PI);
+    c.fill();
+
+    // Inner circle (bright gold)
+    c.fillStyle = GOLD;
+    c.beginPath();
+    c.arc(center, center, radius - 2, 0, 2 * Math.PI);
+    c.fill();
+
+    // Highlight (light gold)
+    c.fillStyle = GOLD_LIGHT;
+    c.beginPath();
+    c.arc(center - 2, center - 2, radius - 5, 0, 2 * Math.PI);
+    c.fill();
+
+    // Larger "$" symbol
+    c.fillStyle = GOLD_DARK;
+    c.fillRect(center - 2, center - 6, 4, 12);
+    c.fillRect(center - 4, center - 3, 8, 2);
+    c.fillRect(center - 4, center + 1, 8, 2);
+
+    tex.refresh();
+  }
   function preload() {
     makePixelSky(this);
     makePixelMountains(this, "mtn_far", 0x0d1320, 40, 4);
     makePixelMountains(this, "mtn_mid", 0x111a2a, 70, 4);
     makePixelMountains(this, "mtn_near", 0x162234, 110, 4);
-    makePixelPlatformTexture(this);
+    createPlatformTextures(this);
     makePixelPlayerTexture(this);
     makePixelDebrisTexture(this);
+    makePixelCoinTexture(this);
   }
 
   function create() {
@@ -442,11 +541,12 @@
     platforms = this.physics.add.staticGroup();
     const baseY = 680;
 
-    // Start platforms
+    // Start platforms (use medium size for starting consistency)
     for (let i = 0; i < 6; i++) {
       const x = 60 + i * 70,
         y = baseY - (i % 2) * 40;
-      platforms.create(x, y, "platform");
+      const platform = platforms.create(x, y, "platform_medium");
+      platform.platformWidth = 120;
     }
 
     // Initial top
@@ -481,6 +581,19 @@
       debrisGroup,
       platforms,
       onDebrisHitsPlatform,
+      null,
+      this
+    );
+
+    // Coins
+    coinsGroup = this.physics.add.group({
+      allowGravity: false,
+      collideWorldBounds: false,
+    });
+    this.physics.add.overlap(
+      player,
+      coinsGroup,
+      onPlayerCollectsCoin,
       null,
       this
     );
@@ -606,6 +719,12 @@
       if (d.y > camBottom + 240 || d.y < scrollY - 2000) d.destroy();
     });
 
+    // Clean up off-screen coins
+    coinsGroup.children.iterate((c) => {
+      if (!c || !c.active) return;
+      if (c.y > camBottom + 240 || c.y < scrollY - 2000) c.destroy();
+    });
+
     // Simple scoring system update
     checkHeightProgress();
 
@@ -669,6 +788,80 @@
     rock.destroy();
   }
 
+  // ----- Coin system -----
+
+  function spawnRiskyCoin(fromX, fromY, toX, toY, gap, reach) {
+    // Don't spawn coins if the group isn't initialized yet
+    if (!coinsGroup) return;
+
+    // Calculate a risky but reachable position between the two platforms
+    const midX = (fromX + toX) / 2;
+    const midY = (fromY + toY) / 2;
+
+    // Add some randomness to make it more challenging
+    const offsetX = Phaser.Math.Between(-reach * 0.3, reach * 0.3);
+    const offsetY = Phaser.Math.Between(-gap * 0.3, -gap * 0.1); // Higher up in the gap
+
+    const coinX = midX + offsetX;
+    const coinY = midY + offsetY;
+
+    // Ensure coin is within screen bounds
+    const finalX = Phaser.Math.Clamp(coinX, MARGIN_X + 20, W - MARGIN_X - 20);
+
+    spawnCoin(finalX, coinY);
+  }
+
+  function spawnCoin(x, y) {
+    // Don't spawn coins if the group isn't initialized yet
+    if (!coinsGroup) return;
+
+    const coin = coinsGroup.create(x, y, "coin");
+    if (!coin) return;
+
+    coin.setDepth(3); // Above debris but below UI
+    coin.body.setSize(18, 18, true); // Larger hitbox for easier collection
+
+    // Add gentle floating animation
+    if (scene && scene.tweens) {
+      scene.tweens.add({
+        targets: coin,
+        y: y - 5,
+        duration: 1500,
+        yoyo: true,
+        repeat: -1,
+        ease: "Sine.easeInOut",
+      });
+
+      scene.tweens.add({
+        targets: coin,
+        scaleX: 1.1,
+        scaleY: 1.1,
+        duration: 1000,
+        yoyo: true,
+        repeat: -1,
+        ease: "Sine.easeInOut",
+      });
+    }
+  }
+
+  function onPlayerCollectsCoin(player, coin) {
+    if (!coin.active) return;
+
+    // Play collection sound
+    sfxTone(800, 0.2, "triangle", 0.8);
+    sfxTone(1000, 0.15, "sine", 0.6);
+
+    // Add score
+    addScore(COIN_POINTS);
+
+    // Visual effect
+    if (scene) {
+      scene.cameras.main.flash(100, 255, 255, 100, false);
+    }
+
+    coin.destroy();
+  }
+
   // ----- Reach-aware spawning helpers -----
 
   function setTopFromGroup() {
@@ -689,48 +882,104 @@
   function spawnPlatformAbove() {
     const gap = Phaser.Math.Between(GAP_MIN, GAP_MAX);
     const reach = maxHorizontalReachForGap(gap);
-    const nx = randomReachableX(topX, reach);
+
+    // Select random platform size
+    const platformSize = selectRandomPlatformSize();
+
+    // Get the width of the previous platform for spacing calculations
+    const lastPlatform = platforms.getLast(true);
+    const prevPlatformWidth =
+      lastPlatform && lastPlatform.platformWidth
+        ? lastPlatform.platformWidth
+        : 120;
+
+    const nx = randomReachableX(
+      topX,
+      reach,
+      platformSize.width,
+      prevPlatformWidth
+    );
     const ny = minY - gap;
-    platforms.create(nx, ny, "platform");
+    const platform = platforms.create(nx, ny, platformSize.key);
+
+    // Store platform width for spacing calculations
+    platform.platformWidth = platformSize.width;
+
+    // Chance to spawn a coin in a risky but reachable position
+    if (Math.random() < COIN_SPAWN_CHANCE) {
+      spawnRiskyCoin(topX, minY, nx, ny, gap, reach);
+    }
+
     minY = ny;
     topX = nx;
   }
-
-  function randomReachableX(fromX, reach) {
+  function randomReachableX(
+    fromX,
+    reach,
+    platformWidth = 120,
+    prevPlatformWidth = 120
+  ) {
     const r = Math.max(32, Math.floor(reach * 0.95)); // Reduced safety margin for more spacing
 
-    // Platform width is 120, encourage more spacing between platforms
-    const PLATFORM_WIDTH = 120;
-    const MIN_SPACING_PERCENT = 0.8; // Require at least 80% of platform width spacing
-    const MIN_CENTER_DISTANCE = PLATFORM_WIDTH * MIN_SPACING_PERCENT; // 96 pixels minimum
+    // Calculate minimum distance considering BOTH platform widths
+    // Need to ensure no overlap: half of each platform + minimum gap
+    const MIN_GAP = 40; // Minimum gap between platform edges
+    const MIN_CENTER_DISTANCE =
+      prevPlatformWidth / 2 + platformWidth / 2 + MIN_GAP;
 
     // Calculate valid range considering spacing constraint
     // New platform center must be at least MIN_CENTER_DISTANCE away from previous center
-    const spacingMinX = fromX - MIN_CENTER_DISTANCE;
-    const spacingMaxX = fromX + MIN_CENTER_DISTANCE;
+    const spacingLeftLimit = fromX - MIN_CENTER_DISTANCE; // Left boundary for spacing
+    const spacingRightLimit = fromX + MIN_CENTER_DISTANCE; // Right boundary for spacing
 
     // Combine reachability and spacing constraints
     let validRanges = [];
 
-    // Left side range (if reachable)
-    const leftMin = Math.max(MARGIN_X, fromX - r);
-    const leftMax = Math.min(spacingMinX, fromX + r);
+    // Left side range (far enough left AND reachable)
+    const leftMin = Math.max(MARGIN_X + platformWidth / 2, fromX - r);
+    const leftMax = Math.min(spacingLeftLimit, fromX - 32); // Must be left of spacing limit
     if (leftMax > leftMin) {
       validRanges.push([leftMin, leftMax]);
     }
 
-    // Right side range (if reachable)
-    const rightMin = Math.max(spacingMaxX, fromX - r);
-    const rightMax = Math.min(W - MARGIN_X, fromX + r);
+    // Right side range (far enough right AND reachable)
+    const rightMin = Math.max(spacingRightLimit, fromX + 32); // Must be right of spacing limit
+    const rightMax = Math.min(W - MARGIN_X - platformWidth / 2, fromX + r);
     if (rightMax > rightMin) {
       validRanges.push([rightMin, rightMax]);
     }
 
     // If no valid ranges due to spacing constraint, fall back to reachability only
+    // But still try to maintain some minimum spacing
     if (validRanges.length === 0) {
-      const fallbackMinX = Math.max(MARGIN_X, fromX - r);
-      const fallbackMaxX = Math.min(W - MARGIN_X, fromX + r);
-      return Phaser.Math.Between(fallbackMinX, fallbackMaxX);
+      console.warn(
+        "No valid ranges with proper spacing, using fallback with reduced spacing"
+      );
+      const reducedMinDistance = Math.min(MIN_CENTER_DISTANCE, 80); // Reduced but still some spacing
+      const fallbackLeftLimit = fromX - reducedMinDistance;
+      const fallbackRightLimit = fromX + reducedMinDistance;
+
+      const fallbackMinX = Math.max(MARGIN_X + platformWidth / 2, fromX - r);
+      const fallbackMaxX = Math.min(
+        W - MARGIN_X - platformWidth / 2,
+        fromX + r
+      );
+
+      // Try to avoid the reduced spacing zone if possible
+      if (fallbackMinX < fallbackLeftLimit) {
+        return Phaser.Math.Between(
+          fallbackMinX,
+          Math.min(fallbackLeftLimit, fallbackMaxX)
+        );
+      } else if (fallbackMaxX > fallbackRightLimit) {
+        return Phaser.Math.Between(
+          Math.max(fallbackRightLimit, fallbackMinX),
+          fallbackMaxX
+        );
+      } else {
+        // Last resort - place anywhere reachable
+        return Phaser.Math.Between(fallbackMinX, fallbackMaxX);
+      }
     }
 
     // Choose randomly from valid ranges

@@ -1,5 +1,5 @@
 // Pixel Climber - game.js
-// Vertical scroller: health, run-up momentum, reach-aware platforms, debris hazards.
+// Health / fall damage
 // Pixel theme + tiny human (32x48). Air-gap fixed via integer sprite + body fit.
 
 (() => {
@@ -30,6 +30,9 @@
   const SAFE_DROP_PX = Math.round(MAX_JUMP_H * 1.05);
   const DMG_PER_50PX = 12;
   const MAX_HEALTH = 100;
+
+  // Simple scoring system
+  const POINTS_PER_METER = 10; // Points for height climbed
 
   // --- Debris knobs (size + slower behavior) ---
   const DEBRIS_SCALE = 0.9; // SIZE KNOB (0.5 smaller … 2.0 larger)
@@ -201,27 +204,23 @@
   };
 
   // --- State
-  let scene;
+  let gameConfig, scene;
   let player, cursors, keysAD, spaceKey;
   let platforms, minY, topX;
-  let heightText,
-    bestHeight = 0;
+  let mtnFar, mtnMid, mtnNear;
+  let debrisGroup, nextDebrisAt;
 
   // Health UI
   let health = MAX_HEALTH,
-    hpTextEl,
-    hpFillEl;
-
-  // Fall tracking
-  let falling = false,
+    bestHeight = 0,
+    falling = false,
     fallStartY = 0;
+  let heightText, hpTextEl, hpFillEl;
 
-  // Parallax background layers
-  let skyImg, mtnFar, mtnMid, mtnNear;
-
-  // Debris
-  let debrisGroup,
-    nextDebrisAt = 0;
+  // Simple scoring system state
+  let score = 0;
+  let lastHeight = 0;
+  let scoreText;
 
   new Phaser.Game(config);
 
@@ -500,11 +499,12 @@
     heightText = document.getElementById("height");
     hpTextEl = document.getElementById("hptext");
     hpFillEl = document.getElementById("hpfill");
-    setHealth(MAX_HEALTH);
-    hookAudioResume();
-    setupAudioUI();
+    scoreText = document.getElementById("score");
 
-    // Kick off
+    setHealth(MAX_HEALTH);
+    resetScore();
+    hookAudioResume();
+    setupAudioUI(); // Kick off
     player.setVelocityY(-480);
   }
 
@@ -601,6 +601,9 @@
       if (d.y > camBottom + 240 || d.y < scrollY - 2000) d.destroy();
     });
 
+    // Simple scoring system update
+    checkHeightProgress();
+
     // HUD
     const climbed = Math.max(0, Math.floor((-player.y + 700) / 10));
     if (climbed > bestHeight) bestHeight = climbed;
@@ -690,9 +693,45 @@
 
   function randomReachableX(fromX, reach) {
     const r = Math.max(32, Math.floor(reach * 0.9)); // safety margin
-    const minX = Math.max(MARGIN_X, fromX - r);
-    const maxX = Math.min(W - MARGIN_X, fromX + r);
-    return Phaser.Math.Between(minX, maxX);
+
+    // Platform width is 120, max 30% overlap = 36px, so min center distance = 84px
+    const PLATFORM_WIDTH = 120;
+    const MAX_OVERLAP_PERCENT = 0.3;
+    const MIN_CENTER_DISTANCE = PLATFORM_WIDTH * (1 - MAX_OVERLAP_PERCENT);
+
+    // Calculate valid range considering overlap constraint
+    // New platform center must be at least MIN_CENTER_DISTANCE away from previous center
+    const overlapMinX = fromX - MIN_CENTER_DISTANCE;
+    const overlapMaxX = fromX + MIN_CENTER_DISTANCE;
+
+    // Combine reachability and overlap constraints
+    let validRanges = [];
+
+    // Left side range (if reachable)
+    const leftMin = Math.max(MARGIN_X, fromX - r);
+    const leftMax = Math.min(overlapMinX, fromX + r);
+    if (leftMax > leftMin) {
+      validRanges.push([leftMin, leftMax]);
+    }
+
+    // Right side range (if reachable)
+    const rightMin = Math.max(overlapMaxX, fromX - r);
+    const rightMax = Math.min(W - MARGIN_X, fromX + r);
+    if (rightMax > rightMin) {
+      validRanges.push([rightMin, rightMax]);
+    }
+
+    // If no valid ranges due to overlap constraint, fall back to reachability only
+    if (validRanges.length === 0) {
+      const fallbackMinX = Math.max(MARGIN_X, fromX - r);
+      const fallbackMaxX = Math.min(W - MARGIN_X, fromX + r);
+      return Phaser.Math.Between(fallbackMinX, fallbackMaxX);
+    }
+
+    // Choose randomly from valid ranges
+    const chosenRange =
+      validRanges[Math.floor(Math.random() * validRanges.length)];
+    return Phaser.Math.Between(chosenRange[0], chosenRange[1]);
   }
 
   function maxHorizontalReachForGap(gap) {
@@ -725,6 +764,7 @@
     if (health <= 0) {
       scene.cameras.main.shake(200, 0.01);
       bestHeight = 0;
+      resetScore();
       scene.time.delayedCall(220, () => scene.scene.restart());
     }
   }
@@ -736,6 +776,34 @@
     if (dmg > 0) {
       scene.cameras.main.flash(120, 255, 64, 64);
       setHealth(health - dmg);
+    }
+  }
+
+  // ----- Simple Scoring System -----
+
+  function addScore(points) {
+    if (points <= 0) return;
+    score += points;
+    updateScoreDisplay();
+  }
+
+  function resetScore() {
+    score = 0;
+    lastHeight = 0;
+    updateScoreDisplay();
+  }
+
+  function updateScoreDisplay() {
+    if (scoreText) scoreText.textContent = `Score: ${score.toLocaleString()}`;
+  }
+
+  function checkHeightProgress() {
+    const currentHeight = Math.max(0, Math.floor((-player.y + 700) / 10));
+    if (currentHeight > lastHeight) {
+      const heightGained = currentHeight - lastHeight;
+      const points = heightGained * POINTS_PER_METER;
+      addScore(points);
+      lastHeight = currentHeight;
     }
   }
 })();

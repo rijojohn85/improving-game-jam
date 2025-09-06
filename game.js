@@ -697,36 +697,36 @@
   }
 
   function randomReachableX(fromX, reach) {
-    const r = Math.max(32, Math.floor(reach * 0.9)); // safety margin
+    const r = Math.max(32, Math.floor(reach * 0.95)); // Reduced safety margin for more spacing
 
-    // Platform width is 120, max 30% overlap = 36px, so min center distance = 84px
+    // Platform width is 120, encourage more spacing between platforms
     const PLATFORM_WIDTH = 120;
-    const MAX_OVERLAP_PERCENT = 0.3;
-    const MIN_CENTER_DISTANCE = PLATFORM_WIDTH * (1 - MAX_OVERLAP_PERCENT);
+    const MIN_SPACING_PERCENT = 0.8; // Require at least 80% of platform width spacing
+    const MIN_CENTER_DISTANCE = PLATFORM_WIDTH * MIN_SPACING_PERCENT; // 96 pixels minimum
 
-    // Calculate valid range considering overlap constraint
+    // Calculate valid range considering spacing constraint
     // New platform center must be at least MIN_CENTER_DISTANCE away from previous center
-    const overlapMinX = fromX - MIN_CENTER_DISTANCE;
-    const overlapMaxX = fromX + MIN_CENTER_DISTANCE;
+    const spacingMinX = fromX - MIN_CENTER_DISTANCE;
+    const spacingMaxX = fromX + MIN_CENTER_DISTANCE;
 
-    // Combine reachability and overlap constraints
+    // Combine reachability and spacing constraints
     let validRanges = [];
 
     // Left side range (if reachable)
     const leftMin = Math.max(MARGIN_X, fromX - r);
-    const leftMax = Math.min(overlapMinX, fromX + r);
+    const leftMax = Math.min(spacingMinX, fromX + r);
     if (leftMax > leftMin) {
       validRanges.push([leftMin, leftMax]);
     }
 
     // Right side range (if reachable)
-    const rightMin = Math.max(overlapMaxX, fromX - r);
+    const rightMin = Math.max(spacingMaxX, fromX - r);
     const rightMax = Math.min(W - MARGIN_X, fromX + r);
     if (rightMax > rightMin) {
       validRanges.push([rightMin, rightMax]);
     }
 
-    // If no valid ranges due to overlap constraint, fall back to reachability only
+    // If no valid ranges due to spacing constraint, fall back to reachability only
     if (validRanges.length === 0) {
       const fallbackMinX = Math.max(MARGIN_X, fromX - r);
       const fallbackMaxX = Math.min(W - MARGIN_X, fromX + r);

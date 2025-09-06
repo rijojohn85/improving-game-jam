@@ -34,9 +34,10 @@
   // Simple scoring system
   const POINTS_PER_METER = 10; // Points for height climbed
   const COIN_POINTS = 50; // Points for collecting a coin
+  const BASE_Y = 680; // Ground level Y coordinate
 
   // Coin system
-  const COIN_SPAWN_CHANCE = 0.3; // 30% chance per platform to spawn a coin
+  const COIN_SPAWN_CHANCE = 0.4; // 40% chance per platform to spawn a coin
   const COIN_SIZE = 24; // Bigger coin size for visibility
 
   // Platform system
@@ -539,7 +540,7 @@
     );
 
     platforms = this.physics.add.staticGroup();
-    const baseY = 680;
+    const baseY = BASE_Y;
 
     // Start platforms (use medium size for starting consistency)
     for (let i = 0; i < 6; i++) {
@@ -794,21 +795,67 @@
     // Don't spawn coins if the group isn't initialized yet
     if (!coinsGroup) return;
 
-    // Calculate a risky but reachable position between the two platforms
-    const midX = (fromX + toX) / 2;
-    const midY = (fromY + toY) / 2;
+    // Check if there's already a coin too close vertically
+    let tooClose = false;
+    coinsGroup.children.iterate((existingCoin) => {
+      if (existingCoin && existingCoin.active) {
+        const verticalDistance = Math.abs(existingCoin.y - (fromY - gap * 0.6));
+        if (verticalDistance < 200) {
+          // Minimum 200px vertical separation
+          tooClose = true;
+        }
+      }
+    });
 
-    // Add some randomness to make it more challenging
-    const offsetX = Phaser.Math.Between(-reach * 0.3, reach * 0.3);
-    const offsetY = Phaser.Math.Between(-gap * 0.3, -gap * 0.1); // Higher up in the gap
+    if (tooClose) return;
 
-    const coinX = midX + offsetX;
-    const coinY = midY + offsetY;
+    // Create multiple positioning strategies for variety
+    const strategies = [
+      // Strategy 1: To the side of the jump path
+      () => {
+        const sideOffset =
+          (Math.random() < 0.5 ? -1 : 1) * Phaser.Math.Between(60, 120);
+        const jumpMidX = (fromX + toX) / 2;
+        return {
+          x: jumpMidX + sideOffset,
+          y: fromY - gap * Phaser.Math.FloatBetween(0.4, 0.7),
+        };
+      },
 
-    // Ensure coin is within screen bounds
-    const finalX = Phaser.Math.Clamp(coinX, MARGIN_X + 20, W - MARGIN_X - 20);
+      // Strategy 2: High and off to one side
+      () => {
+        const direction = toX > fromX ? 1 : -1; // Which side is the next platform
+        const lateralOffset = direction * Phaser.Math.Between(40, 80);
+        return {
+          x: fromX + lateralOffset,
+          y: fromY - gap * Phaser.Math.FloatBetween(0.6, 0.8),
+        };
+      },
 
-    spawnCoin(finalX, coinY);
+      // Strategy 3: Between platforms but offset vertically
+      () => {
+        const midX = (fromX + toX) / 2;
+        const horizontalJitter = Phaser.Math.Between(-30, 30);
+        return {
+          x: midX + horizontalJitter,
+          y: fromY - gap * Phaser.Math.FloatBetween(0.3, 0.6),
+        };
+      },
+    ];
+
+    // Randomly select a positioning strategy
+    const strategy = strategies[Math.floor(Math.random() * strategies.length)];
+    const position = strategy();
+
+    // Ensure coin is within screen bounds and reachable
+    const finalX = Phaser.Math.Clamp(
+      position.x,
+      MARGIN_X + 30,
+      W - MARGIN_X - 30
+    );
+    const finalY = Math.max(position.y, fromY - gap * 0.9); // Don't go too high
+
+    spawnCoin(finalX, finalY);
   }
 
   function spawnCoin(x, y) {
@@ -817,6 +864,12 @@
 
     const coin = coinsGroup.create(x, y, "coin");
     if (!coin) return;
+
+    console.log(
+      `Coin created at (${Math.floor(x)}, ${Math.floor(y)}), total coins: ${
+        coinsGroup.children.size
+      }`
+    );
 
     coin.setDepth(3); // Above debris but below UI
     coin.body.setSize(18, 18, true); // Larger hitbox for easier collection
@@ -907,6 +960,9 @@
 
     // Chance to spawn a coin in a risky but reachable position
     if (Math.random() < COIN_SPAWN_CHANCE) {
+      console.log(
+        `Spawning coin at height ${Math.floor((BASE_Y - ny) / 100)} meters`
+      );
       spawnRiskyCoin(topX, minY, nx, ny, gap, reach);
     }
 
@@ -919,73 +975,88 @@
     platformWidth = 120,
     prevPlatformWidth = 120
   ) {
-    const r = Math.max(32, Math.floor(reach * 0.95)); // Reduced safety margin for more spacing
+    // Calculate the absolute minimum distance to prevent any overlap
+    // This is the sum of half-widths plus a safety buffer
+    const SAFETY_BUFFER = 60; // Guaranteed gap between platform edges
+    const absoluteMinDistance =
+      (prevPlatformWidth + platformWidth) / 2 + SAFETY_BUFFER;
 
-    // Calculate minimum distance considering BOTH platform widths
-    // Need to ensure no overlap: half of each platform + minimum gap
-    const MIN_GAP = 40; // Minimum gap between platform edges
-    const MIN_CENTER_DISTANCE =
-      prevPlatformWidth / 2 + platformWidth / 2 + MIN_GAP;
+    // Calculate reachability bounds
+    const maxReach = Math.max(32, Math.floor(reach * 0.9)); // Conservative reach
+    const reachableMinX = Math.max(
+      MARGIN_X + platformWidth / 2,
+      fromX - maxReach
+    );
+    const reachableMaxX = Math.min(
+      W - MARGIN_X - platformWidth / 2,
+      fromX + maxReach
+    );
 
-    // Calculate valid range considering spacing constraint
-    // New platform center must be at least MIN_CENTER_DISTANCE away from previous center
-    const spacingLeftLimit = fromX - MIN_CENTER_DISTANCE; // Left boundary for spacing
-    const spacingRightLimit = fromX + MIN_CENTER_DISTANCE; // Right boundary for spacing
+    // Define exclusion zone around previous platform (where we cannot place new platform)
+    const exclusionLeft = fromX - absoluteMinDistance;
+    const exclusionRight = fromX + absoluteMinDistance;
 
-    // Combine reachability and spacing constraints
-    let validRanges = [];
+    // Find valid placement zones (reachable AND outside exclusion zone)
+    const validZones = [];
 
-    // Left side range (far enough left AND reachable)
-    const leftMin = Math.max(MARGIN_X + platformWidth / 2, fromX - r);
-    const leftMax = Math.min(spacingLeftLimit, fromX - 32); // Must be left of spacing limit
-    if (leftMax > leftMin) {
-      validRanges.push([leftMin, leftMax]);
-    }
-
-    // Right side range (far enough right AND reachable)
-    const rightMin = Math.max(spacingRightLimit, fromX + 32); // Must be right of spacing limit
-    const rightMax = Math.min(W - MARGIN_X - platformWidth / 2, fromX + r);
-    if (rightMax > rightMin) {
-      validRanges.push([rightMin, rightMax]);
-    }
-
-    // If no valid ranges due to spacing constraint, fall back to reachability only
-    // But still try to maintain some minimum spacing
-    if (validRanges.length === 0) {
-      console.warn(
-        "No valid ranges with proper spacing, using fallback with reduced spacing"
-      );
-      const reducedMinDistance = Math.min(MIN_CENTER_DISTANCE, 80); // Reduced but still some spacing
-      const fallbackLeftLimit = fromX - reducedMinDistance;
-      const fallbackRightLimit = fromX + reducedMinDistance;
-
-      const fallbackMinX = Math.max(MARGIN_X + platformWidth / 2, fromX - r);
-      const fallbackMaxX = Math.min(
-        W - MARGIN_X - platformWidth / 2,
-        fromX + r
-      );
-
-      // Try to avoid the reduced spacing zone if possible
-      if (fallbackMinX < fallbackLeftLimit) {
-        return Phaser.Math.Between(
-          fallbackMinX,
-          Math.min(fallbackLeftLimit, fallbackMaxX)
-        );
-      } else if (fallbackMaxX > fallbackRightLimit) {
-        return Phaser.Math.Between(
-          Math.max(fallbackRightLimit, fallbackMinX),
-          fallbackMaxX
-        );
-      } else {
-        // Last resort - place anywhere reachable
-        return Phaser.Math.Between(fallbackMinX, fallbackMaxX);
+    // Left zone: reachable area to the left of exclusion zone
+    if (reachableMinX < exclusionLeft) {
+      const leftZoneEnd = Math.min(exclusionLeft, reachableMaxX);
+      if (leftZoneEnd > reachableMinX) {
+        validZones.push({
+          start: reachableMinX,
+          end: leftZoneEnd,
+          side: "left",
+        });
       }
     }
 
-    // Choose randomly from valid ranges
-    const chosenRange =
-      validRanges[Math.floor(Math.random() * validRanges.length)];
-    return Phaser.Math.Between(chosenRange[0], chosenRange[1]);
+    // Right zone: reachable area to the right of exclusion zone
+    if (reachableMaxX > exclusionRight) {
+      const rightZoneStart = Math.max(exclusionRight, reachableMinX);
+      if (reachableMaxX > rightZoneStart) {
+        validZones.push({
+          start: rightZoneStart,
+          end: reachableMaxX,
+          side: "right",
+        });
+      }
+    }
+
+    // If we have valid zones, pick one randomly
+    if (validZones.length > 0) {
+      const chosenZone =
+        validZones[Math.floor(Math.random() * validZones.length)];
+      const x = Phaser.Math.Between(chosenZone.start, chosenZone.end);
+
+      // Debug logging
+      console.log(
+        `Platform spacing: prev=${fromX}, new=${x}, distance=${Math.abs(
+          x - fromX
+        )}, minRequired=${absoluteMinDistance}`
+      );
+
+      return x;
+    }
+
+    // Emergency fallback: if no valid zones exist, force maximum distance
+    console.warn(`No valid zones found! Forcing maximum distance placement.`);
+
+    // Try to place at maximum distance in preferred direction
+    const leftOption = fromX - maxReach;
+    const rightOption = fromX + maxReach;
+
+    if (leftOption >= MARGIN_X + platformWidth / 2) {
+      return leftOption;
+    } else if (rightOption <= W - MARGIN_X - platformWidth / 2) {
+      return rightOption;
+    } else {
+      // Absolute last resort - place at screen edge
+      console.error(`Emergency placement at screen boundary!`);
+      return Math.random() < 0.5
+        ? MARGIN_X + platformWidth / 2
+        : W - MARGIN_X - platformWidth / 2;
+    }
   }
 
   function maxHorizontalReachForGap(gap) {

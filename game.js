@@ -504,7 +504,12 @@
     setHealth(MAX_HEALTH);
     resetScore();
     hookAudioResume();
-    setupAudioUI(); // Kick off
+    setupAudioUI();
+
+    // Initialize debris spawning timer
+    nextDebrisAt = this.time.now + DEBRIS_SPAWN_MS;
+
+    // Kick off
     player.setVelocityY(-480);
   }
 

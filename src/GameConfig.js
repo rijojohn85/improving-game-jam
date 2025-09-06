@@ -48,6 +48,11 @@ export const GAME_CONFIG = {
   COIN_SPAWN_CHANCE: 0.7,
   COIN_SIZE: 24,
 
+  // Health pack system
+  HEALTH_PACK_SPAWN_CHANCE: 0.25, // Rarer than coins
+  HEALTH_PACK_SIZE: 24,
+  HEALTH_PACK_HEAL_AMOUNT: 25, // Heals 25 health points
+
   // Platform system
   PLATFORM_SIZES: [
     { width: 80, height: 18, key: "platform_small" },
@@ -107,5 +112,12 @@ export const COLORS = {
     GOLD: "#FFD700",
     LIGHT: "#FFED4E",
     DARK: "#B8860B",
+  },
+  HEALTH_PACK: {
+    CROSS: "#FF4444", // Red cross
+    LIGHT: "#FF6666", // Light red highlight
+    DARK: "#CC2222", // Dark red shadow
+    BASE: "#FFFFFF", // White background
+    BORDER: "#222222", // Dark border
   },
 };

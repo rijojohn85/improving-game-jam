@@ -175,4 +175,11 @@ export class AudioSystem {
     this.sfxTone(800, 0.2, "triangle", 0.8);
     this.sfxTone(1000, 0.15, "sine", 0.6);
   }
+
+  sfxHealthPackCollect() {
+    // Healing sound - gentle, warm tones
+    this.sfxTone(400, 0.3, "sine", 0.7);
+    this.sfxTone(600, 0.25, "sine", 0.5);
+    this.sfxTone(800, 0.2, "sine", 0.3);
+  }
 }

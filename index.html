@@ -1,0 +1,70 @@
+<!DOCTYPE html>
+<html lang="en">
+  <head>
+    <meta charset="utf-8" />
+    <title>Phaser Vertical Scroll (Electron)</title>
+    <meta name="viewport" content="width=device-width, initial-scale=1" />
+    <!-- Keep dev CSP simple; we can harden later -->
+    <style>
+      html,
+      body {
+        margin: 0;
+        padding: 0;
+        height: 100%;
+        background: #0d0f1a;
+        color: #c9d1d9;
+        font: 14px/1.4 system-ui, -apple-system, Segoe UI, Roboto, Inter, Arial;
+        overflow: hidden; /* ← hides scroll bars */
+      }
+
+      canvas {
+        display: block; /* ← prevents inline scroll quirks */
+      }
+
+      #hud {
+        position: absolute;
+        top: 8px;
+        left: 8px;
+        z-index: 1;
+        background: rgba(0, 0, 0, 0.35);
+        padding: 6px 10px;
+        border-radius: 8px;
+        /* optional: if HUD clicks should pass through, uncomment the next line */
+        /* pointer-events: none; */
+      }
+    </style>
+  </head>
+  <body>
+    <div id="hud">
+      Height: <b id="height">0</b> m &nbsp;•&nbsp; Health:
+      <b id="hptext">100</b>
+      <button id="muteBtn" title="Mute / Unmute" style="margin-left: 8px">
+        🔊
+      </button>
+      <div
+        id="hpbar"
+        style="
+          margin-top: 6px;
+          width: 180px;
+          height: 10px;
+          background: rgba(255, 255, 255, 0.15);
+          border-radius: 6px;
+          overflow: hidden;
+        "
+      >
+        <div
+          id="hpfill"
+          style="
+            height: 100%;
+            width: 100%;
+            background: linear-gradient(90deg, #34d399, #fbbf24, #f87171);
+          "
+        ></div>
+      </div>
+    </div>
+
+    <!-- Load Phaser locally -->
+    <script src="./node_modules/phaser/dist/phaser.min.js"></script>
+    <script src="./game.js"></script>
+  </body>
+</html>

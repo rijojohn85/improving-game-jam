@@ -2,6 +2,8 @@
 
 A challenging vertical scrolling platformer built with Phaser 3 and Electron. Climb as high as you can while avoiding falling debris and managing your health!
 
+> **🔧 Recently Refactored**: This codebase has been completely refactored for better maintainability and modularity. See [REFACTORING.md](REFACTORING.md) for details.
+
 ## 🎮 Game Features
 
 ### Core Gameplay
@@ -9,7 +11,8 @@ A challenging vertical scrolling platformer built with Phaser 3 and Electron. Cl
 - **Vertical Climbing**: Navigate upward through procedurally generated platforms
 - **Physics-Based Movement**: Realistic jumping with momentum and run-up mechanics
 - **Health System**: Take damage from falls and debris hits
-- **Scoring System**: Earn points for every meter climbed
+- **Scoring System**: Earn points for every meter climbed and coins collected
+- **Coin Collection**: Collect strategically placed coins for bonus points
 
 ### Advanced Mechanics
 
@@ -17,6 +20,7 @@ A challenging vertical scrolling platformer built with Phaser 3 and Electron. Cl
 - **Fall Damage**: Large drops will hurt you - land carefully!
 - **Debris Hazards**: Avoid falling rocks that spawn from above
 - **Smart Platform Generation**: Mathematically guaranteed reachable platforms with proper spacing
+- **Multiple Platform Sizes**: Small, medium, and large platforms with varied spawning
 
 ### Visual & Audio
 
@@ -24,6 +28,28 @@ A challenging vertical scrolling platformer built with Phaser 3 and Electron. Cl
 - **Parallax Backgrounds**: Multi-layer mountain scenery that moves with your climb
 - **Procedural Audio**: Dynamic sound effects and ambient music generated in real-time
 - **Smooth Camera**: Follows your ascent with proper bounds
+- **Animated Coins**: Floating coins with smooth collection animations
+
+## 🏗️ Architecture
+
+The game uses a modular architecture for better maintainability:
+
+```
+src/
+├── GameConfig.js      # Game constants and configuration
+├── AudioSystem.js     # Audio management and sound effects
+├── PixelArt.js       # Procedural pixel art generation
+├── ScoringSystem.js   # Health, scoring, and UI management
+├── WorldSystem.js     # Platform generation and world streaming
+├── Player.js         # Player character logic and physics
+├── DebrisSystem.js   # Falling debris hazard system
+└── CoinSystem.js     # Coin spawning and collection
+```
+
+**Entry Points**:
+
+- `index.html` - Main HTML entry point
+- `game.js` - Main game orchestration (ES6 modules)
 
 ## 🎯 Gameplay Tips
 

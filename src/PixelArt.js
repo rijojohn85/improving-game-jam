@@ -1,0 +1,263 @@
+// PixelArt.js - Procedural pixel art texture generation
+
+import { GAME_CONFIG, COLORS } from "./GameConfig.js";
+
+export class PixelArt {
+  static makePixelSky(scene) {
+    const { WIDTH: W, HEIGHT: H } = GAME_CONFIG;
+    const { SKY_BANDS } = COLORS;
+
+    // 8px banded gradient for a pixel feel
+    const bands = 8;
+    const g = scene.add.graphics();
+    for (let i = 0; i < H; i += bands) {
+      const t = i / H;
+      const r = Math.round(
+        SKY_BANDS.TOP_R + (SKY_BANDS.BOTTOM_R - SKY_BANDS.TOP_R) * t
+      );
+      const gC = Math.round(
+        SKY_BANDS.TOP_G + (SKY_BANDS.BOTTOM_G - SKY_BANDS.TOP_G) * t
+      );
+      const b = Math.round(
+        SKY_BANDS.TOP_B + (SKY_BANDS.BOTTOM_B - SKY_BANDS.TOP_B) * t
+      );
+      const col = (r << 16) | (gC << 8) | b;
+      g.fillStyle(col, 1);
+      g.fillRect(0, i, W, bands);
+    }
+    g.generateTexture("skytex", W, H);
+    g.destroy();
+  }
+
+  static makePixelMountains(scene, key, color, amp = 60, stepX = 4) {
+    const { WIDTH: W } = GAME_CONFIG;
+
+    // Column-stepped silhouette ridge (blocky)
+    const width = W;
+    const height = 200;
+    const g = scene.add.graphics();
+    g.fillStyle(color, 1);
+
+    let baseY = height * 0.6;
+    for (let x = 0; x < width; x += stepX) {
+      const n =
+        Math.sin(x * 0.01) +
+        Math.sin(x * 0.023 + 1.7) * 0.6 +
+        Math.sin(x * 0.005 - 2) * 0.4;
+      let y = baseY + Math.round((n * amp) / 8) * 2; // quantize to even rows
+      y = Phaser.Math.Clamp(y, 40, height - 8);
+      g.fillRect(x, y, stepX, height - y);
+    }
+
+    // A few horizontal "dither" lines
+    g.fillStyle(0xffffff, 0.05);
+    for (let k = 0; k < 6; k++) {
+      const y = 60 + k * 18 + Math.floor(Math.random() * 4);
+      g.fillRect(0, y, width, 2);
+    }
+
+    g.generateTexture(key, width, height);
+    g.destroy();
+  }
+
+  static createPlatformTextures(scene) {
+    GAME_CONFIG.PLATFORM_SIZES.forEach((platformInfo) => {
+      PixelArt.makePixelPlatformTexture(
+        scene,
+        platformInfo.width,
+        platformInfo.height,
+        platformInfo.key
+      );
+    });
+  }
+
+  static makePixelPlatformTexture(
+    scene,
+    width = 120,
+    height = 18,
+    key = "platform"
+  ) {
+    const { PLATFORM } = COLORS;
+    const g = scene.add.graphics();
+
+    // Base block
+    g.fillStyle(PLATFORM.BASE, 1);
+    g.fillRect(0, 0, width, height);
+
+    // Top highlight (2px)
+    g.fillStyle(PLATFORM.HIGHLIGHT, 1);
+    g.fillRect(0, 0, width, 2);
+    // Bottom shadow (2px)
+    g.fillStyle(PLATFORM.SHADOW, 1);
+    g.fillRect(0, height - 2, width, 2);
+
+    // "Bricks" as blocks proportional to platform size
+    g.fillStyle(PLATFORM.BRICK, 0.9);
+    const blockWidth = Math.max(6, Math.floor(width / 20));
+    const blockHeight = Math.max(3, Math.floor(height / 6));
+    for (let y = 3; y <= height - 6; y += blockHeight + 1) {
+      for (
+        let x = y % 8 ? blockWidth : blockWidth / 2;
+        x <= width - blockWidth - 3;
+        x += blockWidth * 2
+      ) {
+        g.fillRect(x, y, blockWidth, blockHeight);
+      }
+    }
+
+    // Small pits proportional to platform size
+    g.fillStyle(PLATFORM.PIT, 0.7);
+    const numPits = Math.floor(width / 8);
+    for (let i = 0; i < numPits; i++) {
+      const x = 4 + Math.floor(Math.random() * (width - 8));
+      const y = 3 + Math.floor(Math.random() * (height - 8));
+      g.fillRect(x, y, 2, 2);
+    }
+
+    g.generateTexture(key, width, height);
+    g.destroy();
+  }
+
+  static makePixelPlayerTexture(scene) {
+    const { PLAYER } = COLORS;
+
+    // 32x48 tiny human, integer size (prevents "air gap" when colliding)
+    const key = "player_px_32x48";
+    const tex = scene.textures.createCanvas(key, 32, 48);
+    const c = tex.getContext();
+
+    // helper draws 2x2 blocks => crunchy pixels
+    const px = (x, y, w = 2, h = 2, col = "#fff") => {
+      c.fillStyle = col;
+      c.fillRect(x, y, w, h);
+    };
+
+    // hair
+    px(10, 4, 12, 6, PLAYER.HAIR);
+    px(8, 6, 2, 4, PLAYER.HAIR);
+    px(22, 6, 2, 4, PLAYER.HAIR);
+    // head
+    px(10, 10, 12, 10, PLAYER.SKIN);
+    px(8, 12, 2, 6, PLAYER.SKIN);
+    px(22, 12, 2, 6, PLAYER.SKIN);
+    // neck
+    px(14, 20, 4, 2, PLAYER.SKIN);
+
+    // torso (shirt)
+    px(8, 22, 16, 10, PLAYER.SHIRT);
+    // arms
+    px(6, 24, 2, 6, PLAYER.SHIRT);
+    px(24, 24, 2, 6, PLAYER.SHIRT);
+    // hands
+    px(6, 30, 2, 2, PLAYER.SKIN);
+    px(24, 30, 2, 2, PLAYER.SKIN);
+
+    // legs
+    px(12, 32, 4, 10, PLAYER.PANTS);
+    px(16, 32, 4, 10, PLAYER.PANTS);
+    // boots
+    px(10, 44, 8, 4, PLAYER.BOOTS);
+    px(18, 44, 8, 4, PLAYER.BOOTS);
+
+    tex.refresh();
+  }
+
+  static makePixelDebrisTexture(scene) {
+    const { DEBRIS } = COLORS;
+
+    const key = "debris";
+    const tex = scene.textures.createCanvas(key, 12, 10); // Increased from 8x7 to 12x10
+    const c = tex.getContext();
+
+    // irregular chunk mask (more realistic rock debris shape)
+    const mask = [
+      "  ######   ",
+      " ######## #",
+      "###########",
+      "###########",
+      "##########.",
+      " ########  ",
+      "  ######   ",
+      "   ####    ",
+      "    ##     ",
+      "     .     ",
+    ];
+
+    for (let y = 0; y < mask.length; y++) {
+      for (let x = 0; x < mask[y].length; x++) {
+        if (mask[y][x] === "#") {
+          c.fillStyle = DEBRIS.ROCK;
+          c.fillRect(x, y, 1, 1);
+        }
+      }
+    }
+
+    // edge/dots (adjusted for more realistic rock shape)
+    c.fillStyle = DEBRIS.EDGE;
+    c.fillRect(1, 1, 1, 1); // Top left edge
+    c.fillRect(8, 1, 1, 1); // Top right edge
+    c.fillRect(0, 3, 1, 1); // Left side edge
+    c.fillRect(10, 4, 1, 1); // Right side edge
+    c.fillStyle = DEBRIS.DOT;
+    c.fillRect(4, 2, 1, 1); // Top highlight
+    c.fillRect(6, 3, 1, 1); // Center highlight
+    c.fillRect(3, 4, 1, 1); // Left highlight
+    c.fillRect(7, 5, 1, 1); // Right highlight
+
+    tex.refresh();
+  }
+
+  static makePixelCoinTexture(scene) {
+    const { COIN } = COLORS;
+    const { COIN_SIZE } = GAME_CONFIG;
+
+    const key = "coin";
+    const size = COIN_SIZE;
+    const tex = scene.textures.createCanvas(key, size, size);
+    const c = tex.context;
+    c.clearRect(0, 0, size, size);
+
+    // Create a circular coin shape
+    const center = size / 2;
+    const radius = size / 2 - 2;
+
+    // Outer circle (dark gold)
+    c.fillStyle = COIN.DARK;
+    c.beginPath();
+    c.arc(center, center, radius, 0, 2 * Math.PI);
+    c.fill();
+
+    // Inner circle (bright gold)
+    c.fillStyle = COIN.GOLD;
+    c.beginPath();
+    c.arc(center, center, radius - 2, 0, 2 * Math.PI);
+    c.fill();
+
+    // Highlight (light gold)
+    c.fillStyle = COIN.LIGHT;
+    c.beginPath();
+    c.arc(center - 2, center - 2, radius - 5, 0, 2 * Math.PI);
+    c.fill();
+
+    // Larger "$" symbol
+    c.fillStyle = COIN.DARK;
+    c.fillRect(center - 2, center - 6, 4, 12);
+    c.fillRect(center - 4, center - 3, 8, 2);
+    c.fillRect(center - 4, center + 1, 8, 2);
+
+    tex.refresh();
+  }
+
+  static preloadAllTextures(scene) {
+    const { MOUNTAINS } = COLORS;
+
+    PixelArt.makePixelSky(scene);
+    PixelArt.makePixelMountains(scene, "mtn_far", MOUNTAINS.FAR, 40, 4);
+    PixelArt.makePixelMountains(scene, "mtn_mid", MOUNTAINS.MID, 70, 4);
+    PixelArt.makePixelMountains(scene, "mtn_near", MOUNTAINS.NEAR, 110, 4);
+    PixelArt.createPlatformTextures(scene);
+    PixelArt.makePixelPlayerTexture(scene);
+    PixelArt.makePixelDebrisTexture(scene);
+    PixelArt.makePixelCoinTexture(scene);
+  }
+}

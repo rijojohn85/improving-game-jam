@@ -65,7 +65,7 @@
   }
 
   // --- Debris knobs (size + slower behavior) ---
-  const DEBRIS_SCALE = 0.9; // SIZE KNOB (0.5 smaller … 2.0 larger)
+  const DEBRIS_SCALE = 1.5; // SIZE KNOB (0.5 smaller … 2.0 larger)
   const DEBRIS_MAX = 24; // max debris alive
   const DEBRIS_SPAWN_MS = 1200; // slower spawn
   const DEBRIS_DMG = 10;
@@ -413,21 +413,24 @@
 
   function makePixelDebrisTexture(scene) {
     const key = "debris";
-    const tex = scene.textures.createCanvas(key, 8, 7);
+    const tex = scene.textures.createCanvas(key, 12, 10); // Increased from 8x7 to 12x10
     const c = tex.getContext();
     const ROCK = "#6f5a46",
       EDGE = "#4a3b2c",
       DOT = "#8e745c";
 
-    // irregular chunk mask
+    // irregular chunk mask (more realistic rock debris shape)
     const mask = [
-      " .####. ",
-      "######.#",
-      "####### ",
-      "######  ",
-      "#####   ",
-      " ###    ",
-      "  #     ",
+      "  ######   ",
+      " ######## #",
+      "###########",
+      "###########",
+      "##########.",
+      " ########  ",
+      "  ######   ",
+      "   ####    ",
+      "    ##     ",
+      "     .     ",
     ];
     for (let y = 0; y < mask.length; y++) {
       for (let x = 0; x < mask[y].length; x++) {
@@ -437,14 +440,17 @@
         }
       }
     }
-    // edge/dots
+    // edge/dots (adjusted for more realistic rock shape)
     c.fillStyle = EDGE;
-    c.fillRect(0, 1, 1, 1);
-    c.fillRect(6, 1, 1, 1);
-    c.fillRect(1, 2, 1, 1);
+    c.fillRect(1, 1, 1, 1); // Top left edge
+    c.fillRect(8, 1, 1, 1); // Top right edge
+    c.fillRect(0, 3, 1, 1); // Left side edge
+    c.fillRect(10, 4, 1, 1); // Right side edge
     c.fillStyle = DOT;
-    c.fillRect(3, 2, 1, 1);
-    c.fillRect(2, 4, 1, 1);
+    c.fillRect(4, 2, 1, 1); // Top highlight
+    c.fillRect(6, 3, 1, 1); // Center highlight
+    c.fillRect(3, 4, 1, 1); // Left highlight
+    c.fillRect(7, 5, 1, 1); // Right highlight
 
     tex.refresh();
   }

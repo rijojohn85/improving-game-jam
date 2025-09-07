@@ -9,6 +9,7 @@ export class AudioSystem {
     this.musicStarted = false;
     this.muted = false;
     this.musicTimer = null;
+    this.audioBuffers = new Map(); // Store loaded audio files
   }
 
   ensureAudioContext() {
@@ -25,6 +26,41 @@ export class AudioSystem {
     this.sfxGain = this.AC.createGain();
     this.sfxGain.gain.value = 0.18;
     this.sfxGain.connect(this.masterGain);
+  }
+
+  // Load audio file
+  async loadAudio(name, url) {
+    this.ensureAudioContext();
+    try {
+      const response = await fetch(url);
+      const arrayBuffer = await response.arrayBuffer();
+      const audioBuffer = await this.AC.decodeAudioData(arrayBuffer);
+      this.audioBuffers.set(name, audioBuffer);
+    } catch (error) {
+      console.error(`Failed to load audio: ${name}`, error);
+    }
+  }
+
+  // Play loaded audio file
+  playAudio(name, volume = 1, loop = false, gainNode = this.sfxGain) {
+    const buffer = this.audioBuffers.get(name);
+    if (!buffer) {
+      console.warn(`Audio not found: ${name}`);
+      return;
+    }
+
+    const source = this.AC.createBufferSource();
+    const gain = this.AC.createGain();
+    
+    source.buffer = buffer;
+    source.loop = loop;
+    gain.gain.value = volume;
+    
+    source.connect(gain);
+    gain.connect(gainNode);
+    source.start();
+    
+    return source; // Return for stopping if needed
   }
 
   hookAudioResume() {

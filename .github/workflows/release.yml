@@ -1,18 +1,15 @@
-name: Build and Release Electron App
+name: Build and Release Electron App (Windows only)
 
 on:
   push:
     tags:
-      - 'v*' # Triggers on version tags like v1.0.0
+      - 'v*'
 
 jobs:
-  release:
-    runs-on: ubuntu-latest
-    permissions:
-      contents: write
-
+  build-win:
+    runs-on: windows-latest
     steps:
-      - name: Checkout code
+      - name: Checkout
         uses: actions/checkout@v4
 
       - name: Setup Node.js
@@ -21,24 +18,36 @@ jobs:
           node-version: 18
           cache: npm
 
-      - name: Install dependencies
+      - name: Install deps
         run: npm ci
 
-      - name: Build & Publish
-        run: npx electron-builder --publish never
+      - name: Build Electron App (Windows)
+        run: npx electron-builder --win --publish never
         env:
-          CSC_IDENTITY_AUTO_DISCOVERY: false # Disable mac signing if you don’t have certs
+          CSC_IDENTITY_AUTO_DISCOVERY: false
 
-      - name: Create GitHub Release (optional if not using auto-publish)
-        if: startsWith(github.ref, 'refs/tags/')
+      - name: Upload artifact
+        uses: actions/upload-artifact@v4
+        with:
+          name: windows-build
+          path: dist/*.exe
+          retention-days: 2
+
+  release:
+    needs: build-win
+    runs-on: ubuntu-latest
+    permissions:
+      contents: write
+    steps:
+      - name: Download artifact
+        uses: actions/download-artifact@v4
+        with:
+          path: ./artifacts
+
+      - name: Create Release
         uses: softprops/action-gh-release@v1
         with:
           name: Pixel Climber ${{ github.ref_name }}
-          files: |
-            artifacts/**/*.dmg
-            artifacts/**/*.exe
-            artifacts/**/*.AppImage
-            artifacts/**/*.tar.gz
-            artifacts/**/*.zip
+          files: artifacts/**/*.exe
         env:
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}

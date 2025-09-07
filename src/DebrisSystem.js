@@ -165,7 +165,5 @@ export class DebrisSystem {
 
     // Reset spawn timer
     this.nextDebrisAt = 0;
-
-    console.log("DebrisSystem reset complete");
   }
 }

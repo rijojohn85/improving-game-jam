@@ -93,41 +93,40 @@ export class BootSystem {
     const boot = this.bootsGroup.create(x, y, "boot1");
     if (!boot) return;
 
-    console.log(
-      `Boot created at (${Math.floor(x)}, ${Math.floor(
-        y
-      )}), total boots: ${this.bootsGroup.children.size}`
-    );
-
     boot.setDepth(4); // Above coins and debris
-    
+
     // Scale the sprite to match the original BOOT_SIZE (24px)
     const targetSize = GAME_CONFIG.BOOT_SIZE;
     boot.setDisplaySize(targetSize, targetSize);
-    
+
     boot.body.setSize(20, 20, true); // Good hitbox for collection
-    
+
     // Start the boot shining animation
-    if (boot.scene.anims.exists('boot_shine')) {
-      boot.play('boot_shine');
+    if (boot.scene.anims.exists("boot_shine")) {
+      boot.play("boot_shine");
     } else {
       // If animation doesn't exist yet, try to create it
-      console.warn('boot_shine animation not found, attempting to create...');
-      if (boot.scene.textures.exists('boot1') && boot.scene.textures.exists('boot2') && boot.scene.textures.exists('boot3') && boot.scene.textures.exists('boot4')) {
+      console.warn("boot_shine animation not found, attempting to create...");
+      if (
+        boot.scene.textures.exists("boot1") &&
+        boot.scene.textures.exists("boot2") &&
+        boot.scene.textures.exists("boot3") &&
+        boot.scene.textures.exists("boot4")
+      ) {
         boot.scene.anims.create({
-          key: 'boot_shine',
+          key: "boot_shine",
           frames: [
-            { key: 'boot1' },
-            { key: 'boot2' },
-            { key: 'boot3' },
-            { key: 'boot4' },
-            { key: 'boot3' },
-            { key: 'boot2' }
+            { key: "boot1" },
+            { key: "boot2" },
+            { key: "boot3" },
+            { key: "boot4" },
+            { key: "boot3" },
+            { key: "boot2" },
           ],
           frameRate: 5,
-          repeat: -1
+          repeat: -1,
         });
-        boot.play('boot_shine');
+        boot.play("boot_shine");
       }
     }
 
@@ -146,23 +145,21 @@ export class BootSystem {
     }
   }
 
-  onPlayerCollectsBoot(
-    player,
-    boot,
-    scoringSystem,
-    audioSystem,
-    scene
-  ) {
+  onPlayerCollectsBoot(player, boot, scoringSystem, audioSystem, scene) {
     if (!boot.active) return;
 
     // Check if player can collect more boots
-    if (scoringSystem && scoringSystem.bootSlipPrevention >= GAME_CONFIG.BOOT_MAX_STACK) {
+    if (
+      scoringSystem &&
+      scoringSystem.bootSlipPrevention >= GAME_CONFIG.BOOT_MAX_STACK
+    ) {
       return; // Don't collect if at max capacity
     }
 
     if (scoringSystem) {
       // Get player position for floating text
-      const playerX = player.x || (player.body ? player.body.x + player.body.width/2 : 0);
+      const playerX =
+        player.x || (player.body ? player.body.x + player.body.width / 2 : 0);
       const playerY = player.y || (player.body ? player.body.y : 0);
       scoringSystem.collectBoot(audioSystem, scene, playerX, playerY);
     }
@@ -204,7 +201,5 @@ export class BootSystem {
     if (this.bootsGroup) {
       this.bootsGroup.clear(true, true);
     }
-
-    console.log("BootSystem reset complete");
   }
 }

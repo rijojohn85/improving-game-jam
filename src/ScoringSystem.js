@@ -45,13 +45,13 @@ export class ScoringSystem {
 
     // Checkpoint comment debounce
     this.lastCheckpointCommentTime = 0;
-    
+
     // Boot comment debounce
     this.lastBootCommentTime = 0;
-    
+
     // Ice boot comment debounce
     this.lastIceBootCommentTime = 0;
-    
+
     // Idle comment system
     this.lastIdleCommentTime = 0;
     this.lastPlayerPosition = { x: 0, y: 0 };
@@ -304,31 +304,31 @@ export class ScoringSystem {
     if (!scene) return;
 
     // Handle multi-line text by splitting on \n
-    const lines = Array.isArray(text) ? text : text.split('\n');
-    
+    const lines = Array.isArray(text) ? text : text.split("\n");
+
     if (lines.length === 1) {
       // Single line - use original behavior
       const floatingText = scene.add.text(x, y, text, {
-        fontSize: '14px',
+        fontSize: "14px",
         fill: color,
         fontFamily: '"Press Start 2P"',
-        stroke: '#000000',
-        strokeThickness: 2
+        stroke: "#000000",
+        strokeThickness: 2,
       });
-      
+
       floatingText.setOrigin(0.5);
       floatingText.setDepth(1500); // Above UI
-      
+
       // Animate the text floating up and fading out
       scene.tweens.add({
         targets: floatingText,
         y: y - 60,
         alpha: 0,
         duration: 3000, // Increased from 1500 to 2500ms for better readability
-        ease: 'Power2.easeOut',
+        ease: "Power2.easeOut",
         onComplete: () => {
           floatingText.destroy();
-        }
+        },
       });
 
       // Add a slight sideways drift for variety
@@ -336,35 +336,35 @@ export class ScoringSystem {
         targets: floatingText,
         x: x + Phaser.Math.Between(-20, 20),
         duration: 3000, // Increased to match the main animation
-        ease: 'Sine.easeInOut'
+        ease: "Sine.easeInOut",
       });
     } else {
       // Multi-line - create separate text objects for each line
       lines.forEach((line, index) => {
         if (!line.trim()) return; // Skip empty lines
-        
-        const lineY = y + (index * 18); // Space lines 18 pixels apart
+
+        const lineY = y + index * 18; // Space lines 18 pixels apart
         const floatingText = scene.add.text(x, lineY, line.trim(), {
-          fontSize: '14px',
+          fontSize: "14px",
           fill: color,
           fontFamily: '"Press Start 2P"',
-          stroke: '#000000',
-          strokeThickness: 2
+          stroke: "#000000",
+          strokeThickness: 2,
         });
-        
+
         floatingText.setOrigin(0.5);
         floatingText.setDepth(1500); // Above UI
-        
+
         // Animate the text floating up and fading out
         scene.tweens.add({
           targets: floatingText,
           y: lineY - 60,
           alpha: 0,
           duration: 2500,
-          ease: 'Power2.easeOut',
+          ease: "Power2.easeOut",
           onComplete: () => {
             floatingText.destroy();
-          }
+          },
         });
 
         // Add a slight sideways drift for variety
@@ -372,7 +372,7 @@ export class ScoringSystem {
           targets: floatingText,
           x: x + Phaser.Math.Between(-20, 20),
           duration: 2500,
-          ease: 'Sine.easeInOut'
+          ease: "Sine.easeInOut",
         });
       });
     }
@@ -384,7 +384,7 @@ export class ScoringSystem {
     // Debounce slip comments - only show one every 2 seconds
     const currentTime = scene.time.now;
     const SLIP_COMMENT_COOLDOWN = 2500; // 2 seconds in milliseconds
-    
+
     if (currentTime - this.lastSlipCommentTime < SLIP_COMMENT_COOLDOWN) {
       return; // Still in cooldown period, don't show comment
     }
@@ -433,19 +433,26 @@ export class ScoringSystem {
 
     // Random checkpoint comments to show when player reaches a checkpoint
     const checkpointComments = [
-      'Finally… took you\nlong enough.',
-      'Wow, a flag.\nSo impressive.',
-      'Another checkpoint?\nGroundbreaking.',
-      'Can I rest now?\nNo? Figures.',
-      'Oh great, more\nclimbing ahead.',
-      'Yay… safety.\nFor now.',
-      'This better come\nwith a medal.',
-      'Checkpoint reached…\nstill miserable.'
+      "Finally… took you\nlong enough.",
+      "Wow, a flag.\nSo impressive.",
+      "Another checkpoint?\nGroundbreaking.",
+      "Can I rest now?\nNo? Figures.",
+      "Oh great, more\nclimbing ahead.",
+      "Yay… safety.\nFor now.",
+      "This better come\nwith a medal.",
+      "Checkpoint reached…\nstill miserable.",
     ];
-    const randomComment = checkpointComments[Math.floor(Math.random() * checkpointComments.length)];
-    
+    const randomComment =
+      checkpointComments[Math.floor(Math.random() * checkpointComments.length)];
+
     // Show the checkpoint comment above the player (green color)
-    this.showFloatingText(scene, playerX, playerY - 50, randomComment, '#00FF00');
+    this.showFloatingText(
+      scene,
+      playerX,
+      playerY - 50,
+      randomComment,
+      "#00FF00"
+    );
   }
 
   showBootComment(scene, playerX, playerY) {
@@ -454,28 +461,35 @@ export class ScoringSystem {
     // Debounce boot comments - only show one every 2 seconds
     const currentTime = scene.time.now;
     const BOOT_COMMENT_COOLDOWN = 2000; // 2 seconds in milliseconds
-    
+
     if (currentTime - this.lastBootCommentTime < BOOT_COMMENT_COOLDOWN) {
       return; // Still in cooldown period, don't show comment
     }
-    
+
     this.lastBootCommentTime = currentTime;
 
     // Random boot comments to show when player collects boots
     const bootComments = [
-      'Shiny boots…\nfinally some grip!',
-      'No more\nbanana-peel physics!',
-      'About time, my socks\nwere useless.',
-      'Slips? Never\nheard of \'em.',
-      'These better be\nnon-refundable.',
-      'Steel toes and\nstyle points.',
-      'Watch me moonwalk\nup this mountain.',
-      'Grip level:\nmaximum!'
+      "Shiny boots…\nfinally some grip!",
+      "No more\nbanana-peel physics!",
+      "About time, my socks\nwere useless.",
+      "Slips? Never\nheard of 'em.",
+      "These better be\nnon-refundable.",
+      "Steel toes and\nstyle points.",
+      "Watch me moonwalk\nup this mountain.",
+      "Grip level:\nmaximum!",
     ];
-    const randomComment = bootComments[Math.floor(Math.random() * bootComments.length)];
-    
+    const randomComment =
+      bootComments[Math.floor(Math.random() * bootComments.length)];
+
     // Show the boot comment above the player (brown color)
-    this.showFloatingText(scene, playerX, playerY - 50, randomComment, '#8B4513');
+    this.showFloatingText(
+      scene,
+      playerX,
+      playerY - 50,
+      randomComment,
+      "#8B4513"
+    );
   }
 
   showIceBootComment(scene, playerX, playerY) {
@@ -484,28 +498,35 @@ export class ScoringSystem {
     // Debounce ice boot comments - only show one every 5 seconds
     const currentTime = scene.time.now;
     const ICE_BOOT_COMMENT_COOLDOWN = 5000; // 5 seconds in milliseconds
-    
+
     if (currentTime - this.lastIceBootCommentTime < ICE_BOOT_COMMENT_COOLDOWN) {
       return; // Still in cooldown period, don't show comment
     }
-    
+
     this.lastIceBootCommentTime = currentTime;
 
     // Random ice boot comments to show when player lands on ice with boots
     const iceBootComments = [
-      'Ha! Not slipping\nthis time!',
-      'Boots > Ice.\nSimple math.',
-      'Stay frosty…\nbut steady.',
-      'Who\'s laughing now,\nslippery floor?',
-      'Ice rink? More like\ndance floor.',
-      'Traction\nunlocked!',
-      'Sorry ice, no\nfree falls today.',
-      'These soles stick\nbetter than glue.'
+      "Ha! Not slipping\nthis time!",
+      "Boots > Ice.\nSimple math.",
+      "Stay frosty…\nbut steady.",
+      "Who's laughing now,\nslippery floor?",
+      "Ice rink? More like\ndance floor.",
+      "Traction\nunlocked!",
+      "Sorry ice, no\nfree falls today.",
+      "These soles stick\nbetter than glue.",
     ];
-    const randomComment = iceBootComments[Math.floor(Math.random() * iceBootComments.length)];
-    
+    const randomComment =
+      iceBootComments[Math.floor(Math.random() * iceBootComments.length)];
+
     // Show the ice boot comment above the player (brown color)
-    this.showFloatingText(scene, playerX, playerY - 50, randomComment, '#8B4513');
+    this.showFloatingText(
+      scene,
+      playerX,
+      playerY - 50,
+      randomComment,
+      "#8B4513"
+    );
   }
 
   showIdleComment(scene, playerX, playerY, isStationary = false) {
@@ -514,51 +535,58 @@ export class ScoringSystem {
     // Idle comments every 30 seconds
     const currentTime = scene.time.now;
     const IDLE_COMMENT_COOLDOWN = 30000; // 30 seconds
-    
+
     if (currentTime - this.lastIdleCommentTime < IDLE_COMMENT_COOLDOWN) {
       return; // Still in cooldown period, don't show comment
     }
-    
+
     this.lastIdleCommentTime = currentTime;
 
     let idleComments;
-    let commentColor = '#ffffff'; // Sky blue for idle comments
-    
+    let commentColor = "#ffffff"; // Sky blue for idle comments
+
     if (isStationary) {
       // Comments for when player is stationary
       idleComments = [
-        'Oh, we\'re just…\nhanging out now?',
-        'Don\'t mind me,\nI\'ll freeze here.',
-        'Any day now,\nboss.',
-        'Should I order pizza\nwhile we wait?',
-        'Great, now I can\ncount snowflakes.',
-        'Peak climbing speed\nright here.',
-        'Resting? I thought\nthis was a game.',
-        'Fine, I\'ll do the heavy\nbreathing myself.',
-        'Guess I\'ll practice my\nslipping in place.',
-        'Can we call this the summit\nand go home?'
+        "Oh, we're just…\nhanging out now?",
+        "Don't mind me,\nI'll freeze here.",
+        "Any day now,\nboss.",
+        "Should I order pizza\nwhile we wait?",
+        "Great, now I can\ncount snowflakes.",
+        "Peak climbing speed\nright here.",
+        "Resting? I thought\nthis was a game.",
+        "Fine, I'll do the heavy\nbreathing myself.",
+        "Guess I'll practice my\nslipping in place.",
+        "Can we call this the summit\nand go home?",
       ];
     } else {
       // General idle comments for when player is moving
       idleComments = [
-        'Another rock…\nhow original.',
-        'Sure, let\'s keep going\nup forever.',
-        'My arms love this,\nreally.',
-        'So… no elevators\non this mountain?',
-        'Peak fitness? More like\npeak nonsense.',
-        'Hope the view\'s worth\nthe back pain.',
-        'Grip, slip, repeat.\nWhat a hobby.',
-        'Because walking on flat ground\nwas too easy.',
-        'Oh joy, more ice.\nMy favorite.',
-        'Is gravity always\nthis clingy?'
+        "Another rock…\nhow original.",
+        "Sure, let's keep going\nup forever.",
+        "My arms love this,\nreally.",
+        "So… no elevators\non this mountain?",
+        "Peak fitness? More like\npeak nonsense.",
+        "Hope the view's worth\nthe back pain.",
+        "Grip, slip, repeat.\nWhat a hobby.",
+        "Because walking on flat ground\nwas too easy.",
+        "Oh joy, more ice.\nMy favorite.",
+        "Is gravity always\nthis clingy?",
       ];
     }
-    
-    const randomComment = idleComments[Math.floor(Math.random() * idleComments.length)];
-    
+
+    const randomComment =
+      idleComments[Math.floor(Math.random() * idleComments.length)];
+
     // Show idle comment in the middle of the screen below the player
     const screenCenterX = scene.cameras.main.scrollX + GAME_CONFIG.WIDTH / 2;
-    this.showFloatingText(scene, screenCenterX, playerY + 80, randomComment, commentColor);
+    this.showFloatingText(
+      scene,
+      screenCenterX,
+      playerY + 80,
+      randomComment,
+      commentColor
+    );
   }
 
   saveCheckpoint(checkpoint) {
@@ -570,14 +598,6 @@ export class ScoringSystem {
       score: this.score,
       bestHeight: this.bestHeight,
     };
-
-    console.log(
-      `Game saved at checkpoint: ${
-        checkpoint.heightMeters
-      }m - Respawn position: (${Math.floor(checkpoint.spawnX)}, ${Math.floor(
-        checkpoint.spawnY - 100
-      )})`
-    );
   }
 
   loseLife(audioSystem = null) {
@@ -700,9 +720,25 @@ export class ScoringSystem {
           );
 
           // Show random damage comment on the left side
-          const damageComments = ['Ouch!',  'Oof!', 'That hurt!', 'Not again…', 'Yikes!', 'Careful!', 'Whoa!', 'Stay sharp!'];
-          const randomComment = damageComments[Math.floor(Math.random() * damageComments.length)];
-          this.showFloatingText(scene, playerX - 60, playerY - 20, randomComment, '#FF0000');
+          const damageComments = [
+            "Ouch!",
+            "Oof!",
+            "That hurt!",
+            "Not again…",
+            "Yikes!",
+            "Careful!",
+            "Whoa!",
+            "Stay sharp!",
+          ];
+          const randomComment =
+            damageComments[Math.floor(Math.random() * damageComments.length)];
+          this.showFloatingText(
+            scene,
+            playerX - 60,
+            playerY - 20,
+            randomComment,
+            "#FF0000"
+          );
         }
       }
 
@@ -739,10 +775,6 @@ export class ScoringSystem {
       this.lastCoinMilestone = currentMilestone;
       const bonusPoints = GAME_CONFIG.COIN_MILESTONE_BONUS; // Bonus points for every 100 coins
       this.addScore(bonusPoints);
-
-      console.log(
-        `Coin milestone reached! ${this.coinsCollected} coins collected. Bonus: ${bonusPoints} points`
-      );
 
       // Special visual effect for milestone
       if (scene) {
@@ -800,9 +832,9 @@ export class ScoringSystem {
       scene.cameras.main.flash(120, 100, 255, 100, false);
     }
 
-    console.log(
-      `Health pack collected! Healed ${actualHealing} HP. Current health: ${this.health}`
-    );
+    if (scene) {
+      scene.cameras.main.flash(100, 50, 255, 50, false); // Soft blue-green flash
+    }
   }
 
   collectBoot(audioSystem, scene, playerX = null, playerY = null) {
@@ -817,7 +849,13 @@ export class ScoringSystem {
 
     // Show floating text if player position is available
     if (scene && playerX !== null && playerY !== null) {
-      this.showFloatingText(scene, playerX, playerY - 30, '+10 Boots', '#D2B48C');
+      this.showFloatingText(
+        scene,
+        playerX,
+        playerY - 30,
+        "+10 Boots",
+        "#D2B48C"
+      );
       // Show boot collection comment
       this.showBootComment(scene, playerX, playerY);
     }
@@ -839,18 +877,15 @@ export class ScoringSystem {
       scene.cameras.main.flash(120, 255, 165, 0, false);
     }
 
-    console.log(
-      `Boot collected! Boot count: ${this.bootSlipPrevention}/${GAME_CONFIG.BOOT_MAX_STACK}`
-    );
+    if (scene) {
+      scene.cameras.main.flash(120, 139, 69, 34, false); // Brown/leather flash
+    }
   }
 
   useBootSlipPrevention() {
     if (this.bootSlipPrevention > 0) {
       this.bootSlipPrevention--;
       this.updateBootDisplay();
-      console.log(
-        `Boot slip prevention used! Remaining: ${this.bootSlipPrevention}`
-      );
       return true;
     }
     return false;
@@ -862,25 +897,25 @@ export class ScoringSystem {
 
   updateIdleComments(scene, playerX, playerY, deltaTime) {
     if (!scene) return;
-    
+
     // Check if player has moved significantly
     const movementThreshold = 5; // pixels
     const distanceMoved = Math.sqrt(
-      Math.pow(playerX - this.lastPlayerPosition.x, 2) + 
-      Math.pow(playerY - this.lastPlayerPosition.y, 2)
+      Math.pow(playerX - this.lastPlayerPosition.x, 2) +
+        Math.pow(playerY - this.lastPlayerPosition.y, 2)
     );
-    
+
     if (distanceMoved > movementThreshold) {
       // Player is moving, reset stationary timer
       this.stationaryTime = 0;
       this.lastPlayerPosition = { x: playerX, y: playerY };
-      
+
       // Show general idle comments
       this.showIdleComment(scene, playerX, playerY, false);
     } else {
       // Player is stationary, accumulate time
       this.stationaryTime += deltaTime;
-      
+
       // After 3 seconds of being stationary, start showing stationary comments
       if (this.stationaryTime > 3000) {
         this.showIdleComment(scene, playerX, playerY, true);
@@ -1200,8 +1235,6 @@ export class ScoringSystem {
     restartButton.setDepth(1001);
     restartButton.setInteractive({ useHandCursor: true });
     restartButton.on("pointerdown", () => {
-      console.log("Restart button clicked!");
-
       // Simply reload the page to restart everything cleanly
       window.location.reload();
     });
@@ -1267,12 +1300,6 @@ export class ScoringSystem {
       // Move camera to respawn location
       scene.cameras.main.setScroll(0, respawnPos.y - GAME_CONFIG.HEIGHT / 2);
     }
-
-    console.log(
-      `Player respawned at checkpoint: ${
-        respawnPos.heightMeters
-      }m at position (${Math.floor(respawnPos.x)}, ${Math.floor(respawnPos.y)})`
-    );
   }
 
   resetGame() {
@@ -1286,30 +1313,26 @@ export class ScoringSystem {
     this.falling = false;
     this.fallStartY = 0;
     this.bootSlipPrevention = 0;
-<<<<<<< HEAD
     this.coinsCollected = 0;
     this.lastCoinMilestone = 0;
-    
+
     // Reset slip comment debounce
     this.lastSlipCommentTime = 0;
-    
+
     // Reset checkpoint comment debounce
     this.lastCheckpointCommentTime = 0;
-    
+
     // Reset boot comment debounce
     this.lastBootCommentTime = 0;
-    
+
     // Reset ice boot comment debounce
     this.lastIceBootCommentTime = 0;
-    
+
     // Reset idle comment system
     this.lastIdleCommentTime = 0;
     this.lastPlayerPosition = { x: 0, y: 0 };
     this.stationaryTime = 0;
-    
-=======
 
->>>>>>> d21374f9c8e078e4255560e80802ab2192294aa1
     this.updateLivesDisplay();
 
     // Reset heart sprites to full visibility

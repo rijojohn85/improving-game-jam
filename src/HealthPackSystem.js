@@ -93,12 +93,6 @@ export class HealthPackSystem {
     const healthPack = this.healthPacksGroup.create(x, y, "medi1");
     if (!healthPack) return;
 
-    console.log(
-      `Health pack created at (${Math.floor(x)}, ${Math.floor(
-        y
-      )}), total health packs: ${this.healthPacksGroup.children.size}`
-    );
-
     healthPack.setDepth(4); // Above coins and debris
     
     // Scale the sprite to match the original HEALTH_PACK_SIZE (24px)
@@ -202,7 +196,5 @@ export class HealthPackSystem {
     if (this.healthPacksGroup) {
       this.healthPacksGroup.clear(true, true);
     }
-
-    console.log("HealthPackSystem reset complete");
   }
 }

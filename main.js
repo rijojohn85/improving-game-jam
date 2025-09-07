@@ -2,7 +2,7 @@ const { app, BrowserWindow, ipcMain } = require("electron");
 const path = require("path");
 
 // Enable remote module for easier file system access
-require('@electron/remote/main').initialize();
+require("@electron/remote/main").initialize();
 
 function createWindow() {
   const win = new BrowserWindow({
@@ -23,10 +23,13 @@ function createWindow() {
   });
 
   // Enable remote module for this window
-  require('@electron/remote/main').enable(win.webContents);
+  require("@electron/remote/main").enable(win.webContents);
 
   win.setMenuBarVisibility(false);
   win.loadFile(path.join(__dirname, "index.html"));
+
+  // Open DevTools to see any errors
+  win.webContents.openDevTools();
 }
 
 app.whenReady().then(createWindow);

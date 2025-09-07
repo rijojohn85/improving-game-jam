@@ -37,43 +37,38 @@ export class WorldSystem {
     // Scale platform sizes based on height climbed
     let sizeScale = 1.0;
     let weights = [...GAME_CONFIG.PLATFORM_WEIGHTS]; // Copy default weights [0.3, 0.5, 0.2] = [small, medium, large]
-    
+
     if (heightClimbed < 1000) {
       // Early game: Make platforms bigger for easier learning (120% to 100%)
       const easyFactor = (1000 - heightClimbed) / 1000; // 1.0 to 0.0
-      sizeScale = 1.0 + (easyFactor * 0.3); // Scale up to 130% at start
-      
+      sizeScale = 1.0 + easyFactor * 0.3; // Scale up to 130% at start
+
       // Bias towards larger platforms in early game
       weights = [
-        0.1 * (1 - easyFactor) + 0.0 * easyFactor,  // small: 10% to 0%
-        0.3 * (1 - easyFactor) + 0.2 * easyFactor,  // medium: 30% to 20%
-        0.6 * (1 - easyFactor) + 0.8 * easyFactor   // large: 60% to 80%
+        0.1 * (1 - easyFactor) + 0.0 * easyFactor, // small: 10% to 0%
+        0.3 * (1 - easyFactor) + 0.2 * easyFactor, // medium: 30% to 20%
+        0.6 * (1 - easyFactor) + 0.8 * easyFactor, // large: 60% to 80%
       ];
     } else if (heightClimbed > 2500) {
       // Late game: Start scaling down platforms more aggressively after 2500px
       const difficultyFactor = Math.min(0.9, (heightClimbed - 2500) / 5000); // Scale down to 10% over 5000px
       sizeScale = 1.0 - difficultyFactor;
-      
+
       // Bias towards smaller platforms in late game
       weights = [
-        0.3 + 0.5 * difficultyFactor,  // small: 30% to 80%
-        0.5 - 0.3 * difficultyFactor,  // medium: 50% to 20%
-        0.2 - 0.2 * difficultyFactor   // large: 20% to 0%
+        0.3 + 0.5 * difficultyFactor, // small: 30% to 80%
+        0.5 - 0.3 * difficultyFactor, // medium: 50% to 20%
+        0.2 - 0.2 * difficultyFactor, // large: 20% to 0%
       ];
     }
-    
-    // Debug logging occasionally
-    if (Math.random() < 0.1) {
-      console.log(`Platform scaling: height=${Math.floor(heightClimbed)}px, scale=${sizeScale.toFixed(2)}, weights=[${weights.map(w => w.toFixed(2)).join(', ')}]`);
-    }
-    
+
     // Create scaled platform sizes
-    const scaledSizes = GAME_CONFIG.PLATFORM_SIZES.map(size => ({
+    const scaledSizes = GAME_CONFIG.PLATFORM_SIZES.map((size) => ({
       width: Math.max(50, Math.floor(size.width * sizeScale)), // Minimum width of 50px (reduced for late game)
       height: size.height,
-      key: size.key
+      key: size.key,
     }));
-    
+
     const random = Math.random();
     let cumulativeWeight = 0;
 
@@ -103,8 +98,11 @@ export class WorldSystem {
     this.topX = top.x;
   }
 
-  spawnPlatformAbove(coinSystem = null, healthPackSystem = null, bootSystem = null) {
-
+  spawnPlatformAbove(
+    coinSystem = null,
+    healthPackSystem = null,
+    bootSystem = null
+  ) {
     const gap = Phaser.Math.Between(GAME_CONFIG.GAP_MIN, GAME_CONFIG.GAP_MAX);
     const reach = this.maxHorizontalReachForGap(gap);
 
@@ -134,9 +132,13 @@ export class WorldSystem {
     // Phase 2: next 1500px (1500 <= BASE_Y - ny < 3000)
     // Phase 3: BASE_Y - ny >= 3000
     const heightClimbed = GAME_CONFIG.BASE_Y - ny;
-    let dirtProb = 0.8, stoneProb = 0.2, iceProb = 0.0;
+    let dirtProb = 0.8,
+      stoneProb = 0.2,
+      iceProb = 0.0;
     if (heightClimbed < 1500) {
-      dirtProb = 0.8; stoneProb = 0.2; iceProb = 0.0;
+      dirtProb = 0.8;
+      stoneProb = 0.2;
+      iceProb = 0.0;
     } else if (heightClimbed < 3000) {
       // Scale to stone 80%, dirt 15%, ice 5%
       const t = (heightClimbed - 1500) / 1500; // 0 to 1
@@ -144,7 +146,9 @@ export class WorldSystem {
       stoneProb = 0.2 + 0.6 * t; // 0.2 -> 0.8
       iceProb = 0.0 + 0.05 * t; // 0.0 -> 0.05
     } else {
-      dirtProb = 0.02; stoneProb = 0.08; iceProb = 0.90;
+      dirtProb = 0.02;
+      stoneProb = 0.08;
+      iceProb = 0.9;
     }
     // Pick type
     const r = Math.random();
@@ -177,11 +181,6 @@ export class WorldSystem {
 
     // Chance to spawn a coin in a risky but reachable position
     if (coinSystem && Math.random() < GAME_CONFIG.COIN_SPAWN_CHANCE) {
-      console.log(
-        `Spawning coin at height ${Math.floor(
-          (GAME_CONFIG.BASE_Y - ny) / 100
-        )} meters`
-      );
       coinSystem.spawnRiskyCoin(this.topX, this.minY, nx, ny, gap, reach);
     }
 
@@ -190,11 +189,6 @@ export class WorldSystem {
       healthPackSystem &&
       Math.random() < GAME_CONFIG.HEALTH_PACK_SPAWN_CHANCE
     ) {
-      console.log(
-        `Spawning health pack at height ${Math.floor(
-          (GAME_CONFIG.BASE_Y - ny) / 100
-        )} meters`
-      );
       healthPackSystem.spawnHealthPack(
         this.topX,
         this.minY,
@@ -213,24 +207,15 @@ export class WorldSystem {
         bootSpawnChance = GAME_CONFIG.BOOT_SPAWN_CHANCE_ON_ICE;
         // In the ice-heavy phase (>3000px), make boots even more common
         if (heightClimbed >= 3000) {
-          bootSpawnChance = Math.min(0.7, GAME_CONFIG.BOOT_SPAWN_CHANCE_ON_ICE * 1.5); // Up to 67.5% chance in ice phase
+          bootSpawnChance = Math.min(
+            0.7,
+            GAME_CONFIG.BOOT_SPAWN_CHANCE_ON_ICE * 1.5
+          ); // Up to 67.5% chance in ice phase
         }
       }
-      
+
       if (Math.random() < bootSpawnChance) {
-        console.log(
-          `Spawning boot at height ${Math.floor(
-            (GAME_CONFIG.BASE_Y - ny) / 100
-          )} meters on ${platformType} platform (${(bootSpawnChance * 100).toFixed(1)}% chance)`
-        );
-        bootSystem.spawnBoot(
-          this.topX,
-          this.minY,
-          nx,
-          ny,
-          gap,
-          reach
-        );
+        bootSystem.spawnBoot(this.topX, this.minY, nx, ny, gap, reach);
       }
     }
 
@@ -410,7 +395,7 @@ export class WorldSystem {
         );
         const ny = this.minY - gap;
         p.setPosition(nx, ny);
-        
+
         // Reset any boot modifications when recycling platform
         if (p.bootModified) {
           // Restore original ice properties if it was an ice platform
@@ -420,7 +405,7 @@ export class WorldSystem {
           }
           p.bootModified = false;
         }
-        
+
         p.refreshBody();
         this.minY = ny;
         this.topX = nx;
@@ -442,8 +427,6 @@ export class WorldSystem {
 
     // Regenerate initial platforms
     this.generateInitialPlatforms();
-
-    console.log("WorldSystem reset complete");
   }
 
   generateInitialPlatforms() {

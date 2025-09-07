@@ -75,7 +75,6 @@ export class GameScene extends Phaser.Scene {
     // Add game data and reset function to scene for restart functionality
     this.gameData = {
       resetAllSystems: () => {
-        console.log("Resetting all game systems...");
         this.worldSystem.reset();
         this.debrisSystem.reset();
         this.coinSystem.reset();
@@ -312,9 +311,14 @@ export class GameScene extends Phaser.Scene {
     // Update scoring and UI
     this.scoringSystem.checkHeightProgress(playerPos.y);
     this.scoringSystem.updateHeightDisplay(playerPos.y);
-    
+
     // Update idle comment system
-    this.scoringSystem.updateIdleComments(this, playerPos.x, playerPos.y, this.game.loop.delta);
+    this.scoringSystem.updateIdleComments(
+      this,
+      playerPos.x,
+      playerPos.y,
+      this.game.loop.delta
+    );
 
     // Check for checkpoint spawning
     const currentHeightMeters = Math.max(

@@ -173,13 +173,16 @@ export class StartScene extends Phaser.Scene {
     
     // Add animated player sprite (positioned to stand on platform)
     // Platform top is at Y 500 - (27/2) = 486.5
-    // Player bottom should be at Y 486.5, so player center should be at Y 486.5 - 48 = 438.5
-    const player = this.add.sprite(100, 439, playerTextureKey).setScale(2);
+    // Player bottom should be at Y 486.5, so player center should be at Y 486.5 - 25 = 461.5
+    const player = this.add.sprite(100, 462, playerTextureKey);
+    
+    // Match the same display size used in the actual game
+    player.setDisplaySize(40, 50);
 
     // Animate player jumping
     this.tweens.add({
       targets: player,
-      y: 389,
+      y: 412,
       duration: 800,
       yoyo: true,
       repeat: -1,

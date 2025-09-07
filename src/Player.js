@@ -15,18 +15,43 @@ export class Player {
     this._lastPlatformY = null;
     this._iceSlideTimer = 0;
     this._iceSlideDirection = 0;
+    
+    // Manual animation control
+    this._animationTimer = 0;
+    this._currentFrame = 0;
+    this._frameDelay = 60; // frames between animation changes (60 = 1 second at 60fps)
+    this._currentSpriteState = 'idle'; // Track current animation state (changed from 'stand')
+    this._groundedBuffer = 0; // Buffer to stabilize grounded detection for animations
   }
 
   initialize(scene, startX, startY) {
-    // Create player sprite
-    this.sprite = scene.physics.add.sprite(startX, startY, "player_px_32x48");
+    // Create player sprite using the standing sprite
+    this.sprite = scene.physics.add.sprite(startX, startY, "stand");
     this.sprite.name = "player"; // Add name for easy finding
 
-    // Physics body sized so bottom of body == bottom of sprite (no visual gap)
-    this.sprite.body.setSize(28, 46).setOffset(2, 2); // 2 + 46 = 48 -> bottoms align
+    // Physics body sized to exact bigger rectangle
+    // Force the physics body to be bigger for easier collision detection
+    this.sprite.body.setSize(120, 400); // Doubled height from 200 to 400
+    this.sprite.body.setOffset(
+      (this.sprite.width - 120) / 2,  // Center horizontally
+      this.sprite.height - 400        // Align bottom
+    );
     this.sprite.setCollideWorldBounds(true);
     this.sprite.setDragX(GAME_CONFIG.GROUND_DRAG_X);
     this.sprite.setMaxVelocity(GAME_CONFIG.MAX_SPEED_X, 2500);
+
+    // Scale ONLY the visual display to fit within the physics body rectangle
+    // This doesn't affect physics at all, just how the image looks
+    const targetWidth = 40;  // Smaller image (was 60)
+    const targetHeight = 50; // Smaller image (was 80)
+    this.sprite.setDisplaySize(targetWidth, targetHeight);
+
+    // Create animations if they don't exist
+    this.createAnimations(scene);
+
+    // Enable debug rendering for the physics body (green hitbox)
+    // this.sprite.body.debugShowBody = true;
+    // this.sprite.body.debugBodyColor = 0x00ff00; // Green color
 
     // Input setup
     this.cursors = scene.input.keyboard.createCursorKeys();
@@ -39,6 +64,44 @@ export class Player {
     this.sprite.setVelocityY(-480);
 
     return this.sprite;
+  }
+
+  createAnimations(scene) {
+    // Create walking left animation with multiple frames
+    if (!scene.anims.exists('walk-left')) {
+      scene.anims.create({
+        key: 'walk-left',
+        frames: [
+          { key: 'left1' },
+          { key: 'left2' }
+        ],
+        frameRate: 8, // Faster animation for smoother walking
+        repeat: -1
+      });
+    }
+
+    // Create walking right animation with multiple frames
+    if (!scene.anims.exists('walk-right')) {
+      scene.anims.create({
+        key: 'walk-right',
+        frames: [
+          { key: 'right1' },
+          { key: 'right2' }
+        ],
+        frameRate: 8, // Faster animation for smoother walking
+        repeat: -1
+      });
+    }
+
+    // Create idle/standing animation (just one frame)
+    if (!scene.anims.exists('idle')) {
+      scene.anims.create({
+        key: 'idle',
+        frames: [{ key: 'stand' }],
+        frameRate: 1,
+        repeat: 0
+      });
+    }
   }
 
   update(audioSystem = null) {
@@ -142,10 +205,8 @@ export class Player {
           this.sprite.setVelocityX(-clampedSpeed);
           this._lockedAirVX = -clampedSpeed * 0.8; // Reduce initial air velocity for better control
           
-          // Debug: log actual velocity being set
-          if (Math.random() < 0.05) {
-            console.log(`Setting LEFT velocity: ${-clampedSpeed.toFixed(1)} (moveSpeed=${moveSpeed.toFixed(1)}, maxSpeedX=${maxSpeedX.toFixed(1)})`);
-          }
+          // Debug: log actual velocity being set - always log for left movement
+          console.log(`Setting LEFT velocity: ${-clampedSpeed.toFixed(1)} (moveSpeed=${moveSpeed.toFixed(1)}, maxSpeedX=${maxSpeedX.toFixed(1)}) - Actual velocity after set: ${this.sprite.body.velocity.x.toFixed(1)}`);
         } else if (rightPressed) {
           const clampedSpeed = Math.min(moveSpeed, maxSpeedX);
           this.sprite.setVelocityX(clampedSpeed);
@@ -301,6 +362,37 @@ export class Player {
 
   // Track grounded state for next frame
   this._wasGrounded = grounded;
+
+    // Handle sprite animations based on velocity direction with stable grounded detection
+    const currentVX = this.sprite.body.velocity.x;
+    
+    // Use a constant buffer to stabilize grounded detection for animations
+    if (grounded) {
+      this._groundedBuffer = 8; // Set to full buffer when grounded
+    } else {
+      this._groundedBuffer = Math.max(0, this._groundedBuffer - 1); // Reduce buffer when airborne
+    }
+    
+    // Consider "stable grounded" if buffer is above threshold
+    const stableGrounded = this._groundedBuffer >= 4;
+    
+    let desiredAnimation;
+    if (!stableGrounded) {
+      desiredAnimation = 'idle'; // In air, show idle
+    } else if (currentVX < 0) {
+      desiredAnimation = 'walk-left'; // Moving left (any negative velocity)
+    } else if (currentVX > 0) {
+      desiredAnimation = 'walk-right'; // Moving right (any positive velocity)
+    } else {
+      desiredAnimation = 'idle'; // Exactly zero velocity
+    }
+
+    // Only change animation if the desired animation is different from current
+    if (this._currentSpriteState !== desiredAnimation) {
+      this._currentSpriteState = desiredAnimation;
+      this.sprite.play(desiredAnimation);
+      console.log(`Animation changed to: ${desiredAnimation} (velocity: ${currentVX.toFixed(1)}, grounded: ${grounded}, stable: ${stableGrounded}, buffer: ${this._groundedBuffer})`); // Debug log
+    }
 
     // Jump with run-up trade-off
     const jumpPressed =

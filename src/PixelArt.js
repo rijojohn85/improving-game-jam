@@ -175,58 +175,22 @@ export class PixelArt {
   }
 
   static makePixelPlayerTexture(scene) {
-    const { PLAYER } = COLORS;
-
-    // 32x48 tiny human, integer size (prevents "air gap" when colliding)
+    // Load actual sprite images instead of procedural texture
+    const spriteNames = ['stand', 'left1', 'left2', 'right1', 'right2'];
+    
+    spriteNames.forEach(spriteName => {
+      if (!scene.textures.exists(spriteName)) {
+        scene.load.image(spriteName, `./sprites/${spriteName}.png`);
+      }
+    });
+    
+    // Create a placeholder texture for compatibility
     const key = "player_px_32x48";
-    
-    // Check if texture already exists
-    if (scene.textures.exists(key)) {
-      return key;
+    if (!scene.textures.exists(key)) {
+      scene.load.image(key, './sprites/stand.png');
     }
     
-    const tex = scene.textures.createCanvas(key, 32, 48);
-    if (!tex) {
-      console.error(`Failed to create texture: ${key}`);
-      return null;
-    }
-    
-    const c = tex.getContext();
-
-    // helper draws 2x2 blocks => crunchy pixels
-    const px = (x, y, w = 2, h = 2, col = "#fff") => {
-      c.fillStyle = col;
-      c.fillRect(x, y, w, h);
-    };
-
-    // hair
-    px(10, 4, 12, 6, PLAYER.HAIR);
-    px(8, 6, 2, 4, PLAYER.HAIR);
-    px(22, 6, 2, 4, PLAYER.HAIR);
-    // head
-    px(10, 10, 12, 10, PLAYER.SKIN);
-    px(8, 12, 2, 6, PLAYER.SKIN);
-    px(22, 12, 2, 6, PLAYER.SKIN);
-    // neck
-    px(14, 20, 4, 2, PLAYER.SKIN);
-
-    // torso (shirt)
-    px(8, 22, 16, 10, PLAYER.SHIRT);
-    // arms
-    px(6, 24, 2, 6, PLAYER.SHIRT);
-    px(24, 24, 2, 6, PLAYER.SHIRT);
-    // hands
-    px(6, 30, 2, 2, PLAYER.SKIN);
-    px(24, 30, 2, 2, PLAYER.SKIN);
-
-    // legs
-    px(12, 32, 4, 10, PLAYER.PANTS);
-    px(16, 32, 4, 10, PLAYER.PANTS);
-    // boots
-    px(10, 44, 8, 4, PLAYER.BOOTS);
-    px(18, 44, 8, 4, PLAYER.BOOTS);
-
-    tex.refresh();
+    return key;
   }
 
   static makePixelDebrisTexture(scene) {

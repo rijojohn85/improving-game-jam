@@ -41,6 +41,13 @@ export class GameScene extends Phaser.Scene {
 
   // Preload function - loads all textures
   preload() {
+    // Load player sprites first
+    this.load.image('stand', './sprites/stand.png');
+    this.load.image('left1', './sprites/left1.png');
+    this.load.image('left2', './sprites/left2.png');
+    this.load.image('right1', './sprites/right1.png');
+    this.load.image('right2', './sprites/right2.png');
+    
     PixelArt.preloadAllTextures(this);
     this.load.image('background', './background.png');
   }

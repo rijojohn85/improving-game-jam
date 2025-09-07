@@ -285,6 +285,53 @@ export class PixelArt {
     canvas.refresh();
   }
 
+  static makePixelCheckpointTexture(scene) {
+    const { CHECKPOINT } = COLORS;
+    const { CHECKPOINT_SIZE } = GAME_CONFIG;
+
+    const key = "checkpoint";
+    const size = CHECKPOINT_SIZE;
+    const canvas = scene.textures.createCanvas(key, size, size);
+    const c = canvas.context;
+
+    // Flag pole (vertical line)
+    c.fillStyle = CHECKPOINT.POLE;
+    c.fillRect(2, 0, 4, size);
+
+    // Flag base (darker pole bottom)
+    c.fillStyle = CHECKPOINT.DARK;
+    c.fillRect(1, size - 6, 6, 6);
+
+    // Flag (triangular pennant)
+    c.fillStyle = CHECKPOINT.BASE;
+    c.beginPath();
+    c.moveTo(6, 4); // Start at pole
+    c.lineTo(size - 2, 8); // Right point
+    c.lineTo(6, 16); // Back to pole, lower
+    c.closePath();
+    c.fill();
+
+    // Flag highlight
+    c.fillStyle = CHECKPOINT.LIGHT;
+    c.beginPath();
+    c.moveTo(6, 4);
+    c.lineTo(size - 4, 7);
+    c.lineTo(6, 12);
+    c.closePath();
+    c.fill();
+
+    // Flag shadow
+    c.fillStyle = CHECKPOINT.DARK;
+    c.beginPath();
+    c.moveTo(6, 12);
+    c.lineTo(size - 4, 9);
+    c.lineTo(6, 16);
+    c.closePath();
+    c.fill();
+
+    canvas.refresh();
+  }
+
   static preloadAllTextures(scene) {
     const { MOUNTAINS } = COLORS;
 
@@ -297,5 +344,6 @@ export class PixelArt {
     PixelArt.makePixelDebrisTexture(scene);
     PixelArt.makePixelCoinTexture(scene);
     PixelArt.makePixelHealthPackTexture(scene);
+    PixelArt.makePixelCheckpointTexture(scene);
   }
 }

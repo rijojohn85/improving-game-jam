@@ -175,4 +175,13 @@ export class HealthPackSystem {
       scene
     );
   }
+
+  reset() {
+    // Clear all health packs
+    if (this.healthPacksGroup) {
+      this.healthPacksGroup.clear(true, true);
+    }
+
+    console.log("HealthPackSystem reset complete");
+  }
 }

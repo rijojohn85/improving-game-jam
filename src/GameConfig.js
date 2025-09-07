@@ -44,6 +44,11 @@ export const GAME_CONFIG = {
   COIN_POINTS: 50,
   BASE_Y: 680,
 
+  // Lives and checkpoint system
+  MAX_LIVES: 3,
+  CHECKPOINT_INTERVAL_METERS: 250,
+  CHECKPOINT_SIZE: 32,
+
   // Coin system
   COIN_SPAWN_CHANCE: 0.7,
   COIN_SIZE: 24,
@@ -119,5 +124,12 @@ export const COLORS = {
     DARK: "#CC2222", // Dark red shadow
     BASE: "#FFFFFF", // White background
     BORDER: "#222222", // Dark border
+  },
+  CHECKPOINT: {
+    BASE: "#00AA00", // Green base
+    LIGHT: "#00FF00", // Bright green light
+    DARK: "#006600", // Dark green shadow
+    INACTIVE: "#444444", // Gray when inactive
+    POLE: "#666666", // Flag pole color
   },
 };

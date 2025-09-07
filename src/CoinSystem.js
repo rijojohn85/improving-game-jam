@@ -161,4 +161,13 @@ export class CoinSystem {
       scene
     );
   }
+
+  reset() {
+    // Clear all coins
+    if (this.coinsGroup) {
+      this.coinsGroup.clear(true, true);
+    }
+
+    console.log("CoinSystem reset complete");
+  }
 }

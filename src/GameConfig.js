@@ -71,8 +71,8 @@ export const GAME_CONFIG = {
   HEALTH_PACK_HEAL_AMOUNT: 25, // Heals 25 health points
 
   // Boot system
-  BOOT_SPAWN_CHANCE: 0.05, 
-  BOOT_SPAWN_CHANCE_ON_ICE: 0.15, 
+  BOOT_SPAWN_CHANCE: 0.10, 
+  BOOT_SPAWN_CHANCE_ON_ICE: 0.20, 
   BOOT_SIZE: 36,
   BOOT_SLIP_PREVENTION_USES: 10, // Number of times boots prevent slipping
   BOOT_MAX_STACK: 15, // Maximum number of boot uses that can be stacked

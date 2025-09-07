@@ -278,6 +278,9 @@ export class Player {
                 
                 console.log(`Boot used! Ice platform converted to dirt-like properties. Remaining boots: ${scene.scoringSystem.bootSlipPrevention}`);
                 
+                // Show ice boot comment when successfully preventing slip on ice
+                scene.scoringSystem.showIceBootComment(scene, this.sprite.x, this.sprite.y);
+                
                 // Show visual feedback for boot protection
                 if (scene.cameras && scene.cameras.main) {
                   scene.cameras.main.flash(80, 139, 69, 19, false); // Brown flash for boot protection
@@ -328,6 +331,9 @@ export class Player {
                 canStartRandomSlide = false;
                 
                 console.log(`Boot used to prevent random sliding! Ice platform converted to dirt-like properties. Remaining boots: ${scene.scoringSystem.bootSlipPrevention}`);
+                
+                // Show ice boot comment when successfully preventing random sliding on ice
+                scene.scoringSystem.showIceBootComment(scene, this.sprite.x, this.sprite.y);
                 
                 // Show visual feedback for boot protection
                 if (scene.cameras && scene.cameras.main) {

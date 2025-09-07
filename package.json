@@ -8,9 +8,9 @@
     "start": "electron .",
     "dev": "npx http-server -c-1 -p 8080 .",
     "build": "electron-builder",
-    "build:win": "electron-builder --win",
-    "build:mac": "electron-builder --mac",
-    "build:linux": "electron-builder --linux",
+    "build:win": "electron-builder --win --publish=never",
+    "build:mac": "electron-builder --mac --publish=never",
+    "build:linux": "electron-builder --linux --publish=never",
     "dist": "electron-builder --publish=never"
   },
   "dependencies": {

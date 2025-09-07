@@ -7,6 +7,7 @@
   "scripts": {
     "start": "electron .",
     "start-dev": "NODE_ENV=development electron .",
+    "start-win-debug": "set NODE_ENV=development && electron .",
     "dev": "npx http-server -c-1 -p 8080 .",
     "build": "electron-builder",
     "build:win": "electron-builder --win --publish=never",
@@ -48,29 +49,23 @@
       "icon": "AppIcon.png",
       "target": [
         {
-          "target": "dir",
-          "arch": ["x64", "arm64"]
-        },
-        {
           "target": "dmg",
-          "arch": ["x64", "arm64"]
-        },
-        {
-          "target": "zip",
-          "arch": ["x64", "arm64"]
+          "arch": [
+            "x64",
+            "arm64"
+          ]
         }
       ]
     },
     "win": {
       "icon": "AppIcon.png",
+      "requestedExecutionLevel": "asInvoker",
       "target": [
         {
           "target": "nsis",
-          "arch": ["x64", "ia32"]
-        },
-        {
-          "target": "zip",
-          "arch": ["x64", "ia32"]
+          "arch": [
+            "x64"
+          ]
         }
       ]
     },
@@ -79,12 +74,10 @@
       "icon": "AppIcon.png",
       "target": [
         {
-          "target": "AppImage",
-          "arch": ["x64"]
-        },
-        {
           "target": "tar.gz",
-          "arch": ["x64"]
+          "arch": [
+            "x64"
+          ]
         }
       ]
     },

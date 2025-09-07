@@ -13,67 +13,55 @@ import { CoinSystem } from "./src/CoinSystem.js";
 import { HealthPackSystem } from "./src/HealthPackSystem.js";
 import { CheckpointSystem } from "./src/CheckpointSystem.js";
 import { SaveSystem } from "./src/SaveSystem.js";
+import { StartScene } from "./src/StartScene.js";
 
-(() => {
-  const { WIDTH: W, HEIGHT: H } = GAME_CONFIG;
-
-  // Initialize all game systems
-  const audioSystem = new AudioSystem();
-  const scoringSystem = new ScoringSystem();
-  const worldSystem = new WorldSystem();
-  const player = new Player();
-  const debrisSystem = new DebrisSystem();
-  const coinSystem = new CoinSystem();
-  const healthPackSystem = new HealthPackSystem();
-  const checkpointSystem = new CheckpointSystem();
-
-  // Game configuration
-  const config = {
-    type: Phaser.AUTO,
-    width: W,
-    height: H,
-    backgroundColor: GAME_CONFIG.BACKGROUND_COLOR,
-    physics: {
-      default: "arcade",
-      arcade: { gravity: { y: GAME_CONFIG.GRAVITY_Y }, debug: false },
-    },
-    render: { pixelArt: true, antialias: false, roundPixels: true },
-    pixelArt: true,
-    scene: { preload, create, update },
-  };
-
-  // Game state variables
-  let scene;
-  let mtnFar, mtnMid, mtnNear, skyImg;
-  let debugText;
-  let debugVisible = false;
-
-  // Start the game
-  new Phaser.Game(config);
+// Main GameScene class
+export class GameScene extends Phaser.Scene {
+  constructor() {
+    super({ key: "GameScene" });
+    
+    // Initialize all game systems
+    this.audioSystem = new AudioSystem();
+    this.scoringSystem = new ScoringSystem();
+    this.worldSystem = new WorldSystem();
+    this.player = new Player();
+    this.debrisSystem = new DebrisSystem();
+    this.coinSystem = new CoinSystem();
+    this.healthPackSystem = new HealthPackSystem();
+    this.checkpointSystem = new CheckpointSystem();
+    
+    // Game state variables
+    this.mtnFar = null;
+    this.mtnMid = null;
+    this.mtnNear = null;
+    this.skyImg = null;
+    this.debugText = null;
+    this.debugVisible = false;
+  }
 
   // Preload function - loads all textures
-  function preload() {
+  preload() {
     PixelArt.preloadAllTextures(this);
   }
 
   // Create function - initializes the game world and systems
-  function create() {
-    scene = this;
-    scene.cameras.main.roundPixels = true;
+  create() {
+    const { WIDTH: W, HEIGHT: H } = GAME_CONFIG;
+    this.cameras.main.roundPixels = true;
 
     // Add game data and reset function to scene for restart functionality
-    scene.gameData = {
+    this.gameData = {
       resetAllSystems: () => {
         console.log("Resetting all game systems...");
-        worldSystem.reset();
-        debrisSystem.reset();
-        coinSystem.reset();
-        healthPackSystem.reset();
-        checkpointSystem.reset();
-        scoringSystem.resetGame();
+        this.worldSystem.reset();
+        this.debrisSystem.reset();
+        this.coinSystem.reset();
+        this.healthPackSystem.reset();
+        this.checkpointSystem.reset();
+        this.scoringSystem.resetGame();
 
         // Reset player position
-        const playerSprite = player.getSprite();
+        const playerSprite = this.player.getSprite();
         if (playerSprite) {
           playerSprite.setPosition(
             GAME_CONFIG.WIDTH / 2,
@@ -83,12 +71,12 @@ import { SaveSystem } from "./src/SaveSystem.js";
         }
 
         // Reset camera
-        scene.cameras.main.setScroll(0, 0);
+        this.cameras.main.setScroll(0, 0);
       },
     };
 
     // Setup parallax background
-    setupBackground();
+    this.setupBackground();
 
     // Setup physics world
     const worldHeight = 40000;
@@ -104,39 +92,35 @@ import { SaveSystem } from "./src/SaveSystem.js";
     );
 
     // Initialize all game systems
-    worldSystem.initialize(scene);
+    this.worldSystem.initialize(this);
     
-    // Attach systems to scene for easy access
-    scene.worldSystem = worldSystem;
-    scene.scoringSystem = scoringSystem;
-    
-    const playerSprite = player.initialize(
-      scene,
+    const playerSprite = this.player.initialize(
+      this,
       W / 2,
       GAME_CONFIG.BASE_Y - 60
     );
 
     // Setup collisions between player and platforms
-    player.addColliderWith(worldSystem.platforms);
-    worldSystem.refreshPlatformBodies();
+    this.player.addColliderWith(this.worldSystem.platforms);
+    this.worldSystem.refreshPlatformBodies();
 
     // Initialize debris and coin systems
-    debrisSystem.initialize(scene);
-    coinSystem.initialize(scene);
-    healthPackSystem.initialize(scene);
-    checkpointSystem.initialize(scene);
+    this.debrisSystem.initialize(this);
+    this.coinSystem.initialize(this);
+    this.healthPackSystem.initialize(this);
+    this.checkpointSystem.initialize(this);
 
     // Setup all collision interactions
-    debrisSystem.setupCollisions(
-      worldSystem.platforms,
-      player,
-      audioSystem,
-      scoringSystem,
-      scene
+    this.debrisSystem.setupCollisions(
+      this.worldSystem.platforms,
+      this.player,
+      this.audioSystem,
+      this.scoringSystem,
+      this
     );
-    coinSystem.setupCollisions(player, scoringSystem, audioSystem, scene);
-    healthPackSystem.setupCollisions(player, scoringSystem, audioSystem, scene);
-    checkpointSystem.setupCollisions(player, scoringSystem, audioSystem, scene);
+    this.coinSystem.setupCollisions(this.player, this.scoringSystem, this.audioSystem, this);
+    this.healthPackSystem.setupCollisions(this.player, this.scoringSystem, this.audioSystem, this);
+    this.checkpointSystem.setupCollisions(this.player, this.scoringSystem, this.audioSystem, this);
 
     // Setup camera
     const cam = this.cameras.main;
@@ -144,69 +128,71 @@ import { SaveSystem } from "./src/SaveSystem.js";
     cam.startFollow(playerSprite, true, 0.1, 0.1);
 
     // Initialize UI and audio
-    scoringSystem.initialize();
-    audioSystem.hookAudioResume();
-    audioSystem.setupAudioUI();
+    this.scoringSystem.initialize();
+    this.audioSystem.hookAudioResume();
+    this.audioSystem.setupAudioUI();
 
     // Setup debug toggle
-    setupDebugToggle();
+    this.setupDebugToggle();
 
     // Debug text for velocity
-    debugText = scene.add.text(10, 10, '', {
+    this.debugText = this.add.text(10, 10, '', {
       font: '16px monospace',
       fill: '#fff',
       backgroundColor: 'rgba(0,0,0,0.5)',
       padding: { x: 6, y: 2 },
-    }).setScrollFactor(0, 0).setDepth(1000).setVisible(debugVisible);
+    }).setScrollFactor(0, 0).setDepth(1000).setVisible(this.debugVisible);
   }
 
   // Setup parallax background
-  function setupBackground() {
-    skyImg = scene.add
+  setupBackground() {
+    const { WIDTH: W, HEIGHT: H } = GAME_CONFIG;
+    
+    this.skyImg = this.add
       .image(0, 0, "skytex")
       .setOrigin(0, 0)
       .setScrollFactor(0, 0);
-    mtnFar = scene.add
+    this.mtnFar = this.add
       .tileSprite(0, H - 180, W, H + 360, "mtn_far")
       .setOrigin(0, 1)
       .setScrollFactor(0, 0);
-    mtnMid = scene.add
+    this.mtnMid = this.add
       .tileSprite(0, H - 120, W, H + 360, "mtn_mid")
       .setOrigin(0, 1)
       .setScrollFactor(0, 0);
-    mtnNear = scene.add
+    this.mtnNear = this.add
       .tileSprite(0, H - 60, W, H + 360, "mtn_near")
       .setOrigin(0, 1)
       .setScrollFactor(0, 0);
 
-    mtnFar.setAlpha(0.9).setDepth(-30);
-    mtnMid.setAlpha(0.95).setDepth(-20);
-    mtnNear.setAlpha(1).setDepth(-10);
+    this.mtnFar.setAlpha(0.9).setDepth(-30);
+    this.mtnMid.setAlpha(0.95).setDepth(-20);
+    this.mtnNear.setAlpha(1).setDepth(-10);
   }
 
   // Setup debug toggle functionality
-  function setupDebugToggle() {
-    scene.input.keyboard.on('keydown-D', () => {
-      debugVisible = !debugVisible;
-      if (debugText) {
-        debugText.setVisible(debugVisible);
+  setupDebugToggle() {
+    this.input.keyboard.on('keydown-D', () => {
+      this.debugVisible = !this.debugVisible;
+      if (this.debugText) {
+        this.debugText.setVisible(this.debugVisible);
       }
     });
   }
 
   // Main update loop - coordinates all systems
-  function update() {
+  update() {
     // Update player and get state
-    const playerState = player.update(audioSystem);
+    const playerState = this.player.update(this.audioSystem);
     const playerPos = playerState.position;
 
     // Update debug text with velocity, platform friction, and damage info
-    if (debugText && debugVisible && player.getSprite()) {
-      const vx = player.getSprite().body.velocity.x.toFixed(1);
-      const vy = player.getSprite().body.velocity.y.toFixed(1);
+    if (this.debugText && this.debugVisible && this.player.getSprite()) {
+      const vx = this.player.getSprite().body.velocity.x.toFixed(1);
+      const vy = this.player.getSprite().body.velocity.y.toFixed(1);
       
       // Get current platform info using scoring system helper
-      const platformInfo = scoringSystem.getCurrentPlatform(player, scene);
+      const platformInfo = this.scoringSystem.getCurrentPlatform(this.player, this);
       
       // Calculate friction effects and max speed
       let speedScale = 1.0;
@@ -223,13 +209,13 @@ import { SaveSystem } from "./src/SaveSystem.js";
       }
       
       // Check if player is sliding on ice
-      const isSliding = player._iceSlideTimer > 0 && platformInfo.friction < 0.7;
-      const slideInfo = isSliding ? `\nICE SLIDE: ${player._iceSlideTimer.toFixed(0)}f dir:${player._iceSlideDirection}` : "";
+      const isSliding = this.player._iceSlideTimer > 0 && platformInfo.friction < 0.7;
+      const slideInfo = isSliding ? `\nICE SLIDE: ${this.player._iceSlideTimer.toFixed(0)}f dir:${this.player._iceSlideDirection}` : "";
       
       // Get damage debug info from scoring system
-      const dmgInfo = scoringSystem.getDamageDebugInfo();
+      const dmgInfo = this.scoringSystem.getDamageDebugInfo();
 
-      debugText.setText(
+      this.debugText.setText(
         `vx: ${vx}\nvy: ${vy}` +
         `\nfriction: ${platformInfo.friction.toFixed(2)} (${platformInfo.platformType})` +
         `\nspeed: ${speedScale.toFixed(2)}x max: ${maxSpeedMult.toFixed(2)}x` +
@@ -240,40 +226,40 @@ import { SaveSystem } from "./src/SaveSystem.js";
     }
 
     // Handle parallax scrolling
-    updateParallax();
+    this.updateParallax();
 
     // Handle fall detection and damage
-    handleFallDamage(playerState);
+    this.handleFallDamage(playerState);
 
     // Update all game systems
-    worldSystem.updateWorldStreaming(
+    this.worldSystem.updateWorldStreaming(
       this.cameras.main,
       playerState,
-      coinSystem,
-      healthPackSystem,
-      checkpointSystem
+      this.coinSystem,
+      this.healthPackSystem,
+      this.checkpointSystem
     );
-    debrisSystem.update(this);
-    coinSystem.update(this);
-    healthPackSystem.update(this);
-    checkpointSystem.update(this);
+    this.debrisSystem.update(this);
+    this.coinSystem.update(this);
+    this.healthPackSystem.update(this);
+    this.checkpointSystem.update(this);
 
     // Update scoring and UI
-    scoringSystem.checkHeightProgress(playerPos.y);
-    scoringSystem.updateHeightDisplay(playerPos.y);
+    this.scoringSystem.checkHeightProgress(playerPos.y);
+    this.scoringSystem.updateHeightDisplay(playerPos.y);
 
     // Check for checkpoint spawning
     const currentHeightMeters = Math.max(
       0,
       Math.floor((-playerPos.y + GAME_CONFIG.BASE_Y) / 10)
     );
-    if (checkpointSystem.shouldSpawnCheckpoint(currentHeightMeters)) {
+    if (this.checkpointSystem.shouldSpawnCheckpoint(currentHeightMeters)) {
       // Find a suitable platform to place the checkpoint
       const targetY = playerPos.y - 200; // Look for platforms above player
       let bestPlatform = null;
       let closestDistance = Infinity;
 
-      worldSystem.platforms.children.iterate((platform) => {
+      this.worldSystem.platforms.children.iterate((platform) => {
         if (platform && platform.active) {
           const distance = Math.abs(platform.y - targetY);
           if (distance < closestDistance && platform.y < playerPos.y - 50) {
@@ -286,7 +272,7 @@ import { SaveSystem } from "./src/SaveSystem.js";
       if (bestPlatform) {
         const checkpointX = bestPlatform.x;
         const checkpointY = bestPlatform.y - 30; // Place on top of platform
-        checkpointSystem.spawnCheckpoint(
+        this.checkpointSystem.spawnCheckpoint(
           checkpointX,
           checkpointY,
           currentHeightMeters
@@ -296,34 +282,59 @@ import { SaveSystem } from "./src/SaveSystem.js";
   }
 
   // Update parallax background
-  function updateParallax() {
-    const scrollY = scene.cameras.main.scrollY;
-    mtnFar.tilePositionY = -scrollY * 0.12;
-    mtnMid.tilePositionY = -scrollY * 0.26;
-    mtnNear.tilePositionY = -scrollY * 0.42;
+  updateParallax() {
+    const { WIDTH: W } = GAME_CONFIG;
+    const scrollY = this.cameras.main.scrollY;
+    this.mtnFar.tilePositionY = -scrollY * 0.12;
+    this.mtnMid.tilePositionY = -scrollY * 0.26;
+    this.mtnNear.tilePositionY = -scrollY * 0.42;
 
-    const playerPos = player.getPosition();
+    const playerPos = this.player.getPosition();
     const px = Phaser.Math.Clamp(playerPos.x - W / 2, -W / 2, W / 2);
-    mtnFar.tilePositionX = px * 0.02;
-    mtnMid.tilePositionX = px * 0.05;
-    mtnNear.tilePositionX = px * 0.09;
+    this.mtnFar.tilePositionX = px * 0.02;
+    this.mtnMid.tilePositionX = px * 0.05;
+    this.mtnNear.tilePositionX = px * 0.09;
   }
 
   // Handle fall damage detection
-  function handleFallDamage(playerState) {
+  handleFallDamage(playerState) {
     if (playerState.falling) {
-      scoringSystem.startFall(playerState.position.y);
+      this.scoringSystem.startFall(playerState.position.y);
     }
 
-    if (playerState.grounded && scoringSystem.falling) {      const result = scoringSystem.endFall(
+    if (playerState.grounded && this.scoringSystem.falling) {
+      const result = this.scoringSystem.endFall(
         playerState.position.y,
-        audioSystem,
-        scene,
-        player
+        this.audioSystem,
+        this,
+        this.player
       );
       if (result.isDead) {
-        scoringSystem.gameOver(scene);
+        this.scoringSystem.gameOver(this);
       }
     }
   }
+}
+
+// Initialize the game with both scenes
+(() => {
+  const { WIDTH: W, HEIGHT: H } = GAME_CONFIG;
+
+  // Game configuration
+  const config = {
+    type: Phaser.AUTO,
+    width: W,
+    height: H,
+    backgroundColor: GAME_CONFIG.BACKGROUND_COLOR,
+    physics: {
+      default: "arcade",
+      arcade: { gravity: { y: GAME_CONFIG.GRAVITY_Y }, debug: false },
+    },
+    render: { pixelArt: true, antialias: false, roundPixels: true },
+    pixelArt: true,
+    scene: [StartScene, GameScene], // Start with StartScene, then GameScene
+  };
+
+  // Start the game
+  new Phaser.Game(config);
 })();

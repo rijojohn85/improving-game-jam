@@ -42,6 +42,7 @@ export class GameScene extends Phaser.Scene {
   // Preload function - loads all textures
   preload() {
     PixelArt.preloadAllTextures(this);
+    this.load.image('background', './background.png');
   }
 
   // Create function - initializes the game world and systems
@@ -129,7 +130,6 @@ export class GameScene extends Phaser.Scene {
 
     // Initialize UI and audio
     this.scoringSystem.initialize();
-    this.audioSystem.hookAudioResume();
     this.audioSystem.setupAudioUI();
 
     // Setup debug toggle
@@ -149,7 +149,7 @@ export class GameScene extends Phaser.Scene {
     const { WIDTH: W, HEIGHT: H } = GAME_CONFIG;
     
     this.skyImg = this.add
-      .image(0, 0, "skytex")
+      .image(-50, -50, "background")
       .setOrigin(0, 0)
       .setScrollFactor(0, 0);
     this.mtnFar = this.add

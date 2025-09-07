@@ -161,7 +161,10 @@ export class BootSystem {
     }
 
     if (scoringSystem) {
-      scoringSystem.collectBoot(audioSystem, scene);
+      // Get player position for floating text
+      const playerX = player.x || (player.body ? player.body.x + player.body.width/2 : 0);
+      const playerY = player.y || (player.body ? player.body.y : 0);
+      scoringSystem.collectBoot(audioSystem, scene, playerX, playerY);
     }
 
     boot.destroy();

@@ -419,9 +419,37 @@ export class PixelArt {
     const { CHECKPOINT } = COLORS;
     const { CHECKPOINT_SIZE } = GAME_CONFIG;
 
-    const key = "checkpoint";
     const size = CHECKPOINT_SIZE;
     
+    // Create red (inactive) checkpoint texture
+    this.makeCheckpointTexture(scene, "checkpoint_red", size, {
+      BASE: "#FF4444", // Red flag
+      LIGHT: "#FF6666", // Light red highlight  
+      DARK: "#CC2222", // Dark red shadow
+      POLE: CHECKPOINT.POLE,
+      POLE_DARK: CHECKPOINT.DARK
+    });
+    
+    // Create green (active) checkpoint texture  
+    this.makeCheckpointTexture(scene, "checkpoint_green", size, {
+      BASE: CHECKPOINT.BASE, // Green flag
+      LIGHT: CHECKPOINT.LIGHT, // Light green highlight
+      DARK: CHECKPOINT.DARK, // Dark green shadow
+      POLE: CHECKPOINT.POLE,
+      POLE_DARK: CHECKPOINT.DARK
+    });
+    
+    // Create default "checkpoint" texture as red for backwards compatibility
+    this.makeCheckpointTexture(scene, "checkpoint", size, {
+      BASE: "#FF4444", // Red flag
+      LIGHT: "#FF6666", // Light red highlight
+      DARK: "#CC2222", // Dark red shadow
+      POLE: CHECKPOINT.POLE,
+      POLE_DARK: CHECKPOINT.DARK
+    });
+  }
+
+  static makeCheckpointTexture(scene, key, size, colors) {
     // Check if texture already exists
     if (scene.textures.exists(key)) {
       return;
@@ -436,15 +464,15 @@ export class PixelArt {
     const c = canvas.context;
 
     // Flag pole (vertical line)
-    c.fillStyle = CHECKPOINT.POLE;
+    c.fillStyle = colors.POLE;
     c.fillRect(2, 0, 4, size);
 
     // Flag base (darker pole bottom)
-    c.fillStyle = CHECKPOINT.DARK;
+    c.fillStyle = colors.POLE_DARK;
     c.fillRect(1, size - 6, 6, 6);
 
     // Flag (triangular pennant)
-    c.fillStyle = CHECKPOINT.BASE;
+    c.fillStyle = colors.BASE;
     c.beginPath();
     c.moveTo(6, 4); // Start at pole
     c.lineTo(size - 2, 8); // Right point
@@ -453,7 +481,7 @@ export class PixelArt {
     c.fill();
 
     // Flag highlight
-    c.fillStyle = CHECKPOINT.LIGHT;
+    c.fillStyle = colors.LIGHT;
     c.beginPath();
     c.moveTo(6, 4);
     c.lineTo(size - 4, 7);
@@ -462,7 +490,7 @@ export class PixelArt {
     c.fill();
 
     // Flag shadow
-    c.fillStyle = CHECKPOINT.DARK;
+    c.fillStyle = colors.DARK;
     c.beginPath();
     c.moveTo(6, 12);
     c.lineTo(size - 4, 9);

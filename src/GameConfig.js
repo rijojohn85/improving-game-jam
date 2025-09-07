@@ -61,8 +61,9 @@ export const GAME_CONFIG = {
   CHECKPOINT_SIZE: 32,
 
   // Coin system
-  COIN_SPAWN_CHANCE: 0.5,
+  COIN_SPAWN_CHANCE: 0.8, // Increased for more coins early game
   COIN_SIZE: 36,
+  COIN_MILESTONE_BONUS: 1000, // Bonus points for every 100 coins
 
   // Health pack system
   HEALTH_PACK_SPAWN_CHANCE: 0.25, // Rarer than coins

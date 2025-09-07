@@ -286,6 +286,12 @@ export class Player {
             }
             
             if (shouldSlide) {
+              // Show slip comment when starting to slide on ice
+              const scene = this.sprite.scene;
+              if (scene && scene.scoringSystem) {
+                scene.scoringSystem.showSlipComment(scene, this.sprite.x, this.sprite.y);
+              }
+              
               // Slide in direction from previous platform (reduced speed for better control)
               let slideSpeed = Math.min(moveSpeed * 0.2, maxSpeedX * 0.6); // Much lower speed multiplier for landing slide
               let dir = 0;
@@ -341,6 +347,12 @@ export class Player {
               }
               
               if (isNearlyStationary && Math.random() < GAME_CONFIG.ICE_SLIDE_CHANCE) {
+                // Show slip comment when starting random sliding
+                const scene = this.sprite.scene;
+                if (scene && scene.scoringSystem) {
+                  scene.scoringSystem.showSlipComment(scene, this.sprite.x, this.sprite.y);
+                }
+                
                 this._iceSlideTimer = Math.random() * 120 + 60;
                 this._iceSlideDirection = Math.random() < 0.5 ? -1 : 1;
                 console.log(`Starting ice slide! Timer=${this._iceSlideTimer}, direction=${this._iceSlideDirection}`);

@@ -145,7 +145,10 @@ export class CoinSystem {
     if (!coin.active) return;
 
     if (scoringSystem) {
-      scoringSystem.collectCoin(audioSystem, scene);
+      // Get player position for floating text
+      const playerX = player.x || (player.body ? player.body.x + player.body.width/2 : 0);
+      const playerY = player.y || (player.body ? player.body.y : 0);
+      scoringSystem.collectCoin(audioSystem, scene, playerX, playerY);
     }
 
     coin.destroy();

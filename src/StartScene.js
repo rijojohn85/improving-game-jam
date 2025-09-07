@@ -16,6 +16,21 @@ export class StartScene extends Phaser.Scene {
   create() {
     const { WIDTH: W, HEIGHT: H } = GAME_CONFIG;
 
+    this.keyHandler = (e) => {
+      if (['ArrowUp', 'ArrowDown', 'ArrowLeft', 'ArrowRight'].includes(e.code)) {
+        e.preventDefault();
+      }
+    };
+    document.addEventListener('keydown', this.keyHandler);
+
+    this.spacekeyHandler = (e) => {
+      if (['Space'].includes(e.code)) {
+        e.preventDefault();
+        this.startGame();
+      }
+    };
+    document.addEventListener('keydown', this.spacekeyHandler);
+
     // Create animated background
     this.createAnimatedBackground();
 
@@ -299,6 +314,10 @@ export class StartScene extends Phaser.Scene {
   }
 
   startGame() {
+    // Remove event listener to restore arrow key functionality
+    document.removeEventListener('keydown', this.keyHandler);
+    document.removeEventListener('keydown', this.spacekeyHandler)
+    
     // Add a transition effect
     const { WIDTH: W, HEIGHT: H } = GAME_CONFIG;
     

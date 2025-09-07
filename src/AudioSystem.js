@@ -63,19 +63,19 @@ export class AudioSystem {
     return source; // Return for stopping if needed
   }
 
-  hookAudioResume() {
-    const resume = () => {
+  async setupAudioUI() {
+    await this.loadAudio('background-music', 'sounds/background-music.mp3');
+
+    const startMusic = () => {
       this.ensureAudioContext();
       if (this.AC.state === "suspended") this.AC.resume();
-      this.startMusic();
-      window.removeEventListener("pointerdown", resume);
-      window.removeEventListener("keydown", resume);
+      this.playAudio('background-music', 1, true, this.musicGain);
+      window.removeEventListener("pointerdown", startMusic);
+      window.removeEventListener("keydown", startMusic);
     };
-    window.addEventListener("pointerdown", resume);
-    window.addEventListener("keydown", resume);
-  }
-
-  setupAudioUI() {
+    window.addEventListener("pointerdown", startMusic);
+    window.addEventListener("keydown", startMusic);
+    startMusic();
     const btn = document.getElementById("muteBtn");
     if (!btn) return;
     btn.onclick = () => {

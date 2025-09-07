@@ -36,7 +36,8 @@ export class CheckpointSystem {
   spawnCheckpoint(x, y, heightMeters) {
     if (!this.checkpointsGroup) return;
 
-    const checkpoint = this.checkpointsGroup.create(x, y, "checkpoint");
+    // Use red checkpoint texture for inactive checkpoints
+    const checkpoint = this.checkpointsGroup.create(x, y, "checkpoint_red");
     if (!checkpoint) return;
 
     // Store checkpoint data
@@ -54,6 +55,8 @@ export class CheckpointSystem {
     checkpoint.setDepth(5); // Above other collectibles
     checkpoint.body.setSize(28, 30, true); // Good hitbox for activation
     checkpoint.setOrigin(0.5, 1); // Bottom center origin
+    
+    // No need for tint since we're using the red texture directly
 
     // Add flag animation
     const scene = checkpoint.scene;
@@ -79,8 +82,17 @@ export class CheckpointSystem {
     this.currentCheckpoint = checkpoint;
     this.activeCheckpoints.add(checkpoint);
 
-    // Change checkpoint appearance to indicate activation
-    checkpoint.setTint(0x00ff00); // Green tint
+    // Change checkpoint appearance to indicate activation - use green texture
+    checkpoint.setTexture("checkpoint_green");
+    
+    // Show checkpoint comment if player position is available
+    if (scoringSystem && scene) {
+      // Get player position for the comment
+      const player = scene.children.getByName("player");
+      if (player) {
+        scoringSystem.showCheckpointComment(scene, player.x, player.y);
+      }
+    }
 
     // Visual and audio feedback
     if (scene) {
@@ -165,5 +177,15 @@ export class CheckpointSystem {
     this.lastCheckpointHeight = 0;
     this.currentCheckpoint = null;
     this.activeCheckpoints.clear();
+    
+    // Reset all checkpoints to red when game resets
+    if (this.checkpointsGroup) {
+      this.checkpointsGroup.children.iterate((checkpoint) => {
+        if (checkpoint && checkpoint.active) {
+          checkpoint.setTexture("checkpoint_red"); // Use red texture
+          checkpoint.isActive = false;
+        }
+      });
+    }
   }
 }

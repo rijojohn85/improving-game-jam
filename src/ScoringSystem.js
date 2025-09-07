@@ -20,6 +20,10 @@ export class ScoringSystem {
     // Boot system
     this.bootSlipPrevention = 0; // Number of slip preventions remaining
 
+    // Coin system
+    this.coinsCollected = 0; // Total coins collected
+    this.lastCoinMilestone = 0; // Last 100-coin milestone reached
+
     // UI elements (now canvas-based)
     this.heightText = null;
     this.healthText = null;
@@ -31,9 +35,16 @@ export class ScoringSystem {
     this.livesText = null;
     this.heartSprites = [];
     this.bootText = null;
+    this.coinText = null;
 
     // Save system
     this.saveSystem = new SaveSystem();
+    
+    // Slip comment debounce
+    this.lastSlipCommentTime = 0;
+    
+    // Checkpoint comment debounce
+    this.lastCheckpointCommentTime = 0;
   }
 
   initialize(scene) {
@@ -47,6 +58,7 @@ export class ScoringSystem {
     this.resetScore();
     this.updateLivesDisplay();
     this.updateBootDisplay();
+    this.updateCoinDisplay();
 
     // Initialize save system
     this.saveSystem.initialize();
@@ -124,6 +136,15 @@ export class ScoringSystem {
     this.bootText = scene.add.text(WIDTH - 10, 60, 'Boots: 0/15', {
       fontSize: '12px',
       fill: '#D2B48C',
+      fontFamily: '"Press Start 2P"',
+      backgroundColor: 'rgba(0,0,0,0.7)',
+      padding: { x: 3, y: 2 }
+    }).setOrigin(1, 0).setScrollFactor(0).setDepth(1001);
+    
+    // Fourth line: Coins counter (right aligned)
+    this.coinText = scene.add.text(WIDTH - 10, 85, 'Coins: 0', {
+      fontSize: '12px',
+      fill: '#FFD700',
       fontFamily: '"Press Start 2P"',
       backgroundColor: 'rgba(0,0,0,0.7)',
       padding: { x: 3, y: 2 }
@@ -235,6 +256,99 @@ export class ScoringSystem {
     }
   }
 
+  updateCoinDisplay() {
+    if (this.coinText) {
+      this.coinText.setText(`Coins: ${this.coinsCollected}`);
+    }
+  }
+
+  showFloatingText(scene, x, y, text, color = '#ffffff') {
+    if (!scene) return;
+
+    // Create floating text near the player
+    const floatingText = scene.add.text(x, y, text, {
+      fontSize: '14px',
+      fill: color,
+      fontFamily: '"Press Start 2P"',
+      stroke: '#000000',
+      strokeThickness: 2
+    });
+    
+    floatingText.setOrigin(0.5);
+    floatingText.setDepth(1500); // Above UI
+    
+    // Animate the text floating up and fading out
+    scene.tweens.add({
+      targets: floatingText,
+      y: y - 60,
+      alpha: 0,
+      duration: 2500, // Increased from 1500 to 2500ms for better readability
+      ease: 'Power2.easeOut',
+      onComplete: () => {
+        floatingText.destroy();
+      }
+    });
+
+    // Add a slight sideways drift for variety
+    scene.tweens.add({
+      targets: floatingText,
+      x: x + Phaser.Math.Between(-20, 20),
+      duration: 2500, // Increased to match the main animation
+      ease: 'Sine.easeInOut'
+    });
+  }
+
+  showSlipComment(scene, playerX, playerY) {
+    if (!scene) return;
+
+    // Debounce slip comments - only show one every 2 seconds
+    const currentTime = scene.time.now;
+    const SLIP_COMMENT_COOLDOWN = 500; // 2 seconds in milliseconds
+    
+    if (currentTime - this.lastSlipCommentTime < SLIP_COMMENT_COOLDOWN) {
+      return; // Still in cooldown period, don't show comment
+    }
+    
+    this.lastSlipCommentTime = currentTime;
+
+    // Random slip comments to show when player starts slipping
+    const slipComments = ['Whoa!', 'Slipping!', "Can't hold on!", 'Too icy!', 'Yikes!', 'Not good…', 'Ahh!', 'Steady… steady…'];
+    const randomComment = slipComments[Math.floor(Math.random() * slipComments.length)];
+    
+    // Show the slip comment above the player
+    this.showFloatingText(scene, playerX, playerY - 40, randomComment, '#87CEEB');
+  }
+
+  showCheckpointComment(scene, playerX, playerY) {
+    if (!scene) return;
+
+    // Debounce checkpoint comments - only show one every 3 seconds
+    const currentTime = scene.time.now;
+    const CHECKPOINT_COMMENT_COOLDOWN = 3000; // 3 seconds in milliseconds
+    
+    if (currentTime - this.lastCheckpointCommentTime < CHECKPOINT_COMMENT_COOLDOWN) {
+      return; // Still in cooldown period, don't show comment
+    }
+    
+    this.lastCheckpointCommentTime = currentTime;
+
+    // Random checkpoint comments to show when player reaches a checkpoint
+    const checkpointComments = [
+      'Finally… took you long enough.',
+      'Wow, a flag. So impressive.',
+      'Another checkpoint? Groundbreaking.',
+      'Can I rest now? No? Figures.',
+      'Oh great, more climbing ahead.',
+      'Yay… safety. For now.',
+      'This better come with a medal.',
+      'Checkpoint reached… still miserable.'
+    ];
+    const randomComment = checkpointComments[Math.floor(Math.random() * checkpointComments.length)];
+    
+    // Show the checkpoint comment above the player
+    this.showFloatingText(scene, playerX, playerY - 50, randomComment, '#87CEEB');
+  }
+
   saveCheckpoint(checkpoint) {
     this.currentCheckpoint = checkpoint;
     this.checkpointData = {
@@ -341,6 +455,23 @@ export class ScoringSystem {
     }
 
     if (finalDmg > 0) {
+      // Show floating text for health loss if player position is available
+      if (scene && player) {
+        const playerSprite = player.getSprite ? player.getSprite() : player;
+        if (playerSprite) {
+          const playerX = playerSprite.x || (playerSprite.body ? playerSprite.body.x + playerSprite.body.width/2 : 0);
+          const playerY = playerSprite.y || (playerSprite.body ? playerSprite.body.y : 0);
+          
+          // Show damage amount
+          this.showFloatingText(scene, playerX, playerY - 30, `-${finalDmg} Health`, '#FF0000');
+          
+          // Show random damage comment on the left side
+          const damageComments = ['Ouch!',  'Oof!', 'That hurt!', 'Not again…', 'Yikes!', 'Careful!', 'Whoa!', 'Stay sharp!'];
+          const randomComment = damageComments[Math.floor(Math.random() * damageComments.length)];
+          this.showFloatingText(scene, playerX - 60, playerY - 20, randomComment, '#87CEEB');
+        }
+      }
+      
       if (scene) {
         scene.cameras.main.flash(120, 255, 64, 64);
       }
@@ -351,24 +482,61 @@ export class ScoringSystem {
     return { damage: 0, isDead: false };
   }
 
-  collectCoin(audioSystem, scene) {
+  collectCoin(audioSystem, scene, playerX = null, playerY = null) {
     if (audioSystem) {
       audioSystem.sfxCoinCollect();
     }
 
+    // Show floating text if player position is available
+    if (scene && playerX !== null && playerY !== null) {
+      this.showFloatingText(scene, playerX, playerY - 30, '+1 Coin', '#FFD700');
+    }
+
+    // Increment coin counter
+    this.coinsCollected++;
+    this.updateCoinDisplay();
+
+    // Add regular coin points
     this.addScore(GAME_CONFIG.COIN_POINTS);
+
+    // Check for 100-coin milestone bonus
+    const currentMilestone = Math.floor(this.coinsCollected / 100);
+    if (currentMilestone > this.lastCoinMilestone) {
+      this.lastCoinMilestone = currentMilestone;
+      const bonusPoints = GAME_CONFIG.COIN_MILESTONE_BONUS; // Bonus points for every 100 coins
+      this.addScore(bonusPoints);
+      
+      console.log(`Coin milestone reached! ${this.coinsCollected} coins collected. Bonus: ${bonusPoints} points`);
+      
+      // Special visual effect for milestone
+      if (scene) {
+        scene.cameras.main.flash(200, 255, 215, 0, false); // Golden flash
+        scene.cameras.main.shake(100, 0.005); // Small celebratory shake
+      }
+    }
 
     if (scene) {
       scene.cameras.main.flash(100, 255, 255, 100, false);
     }
   }
 
-  collectHealthPack(audioSystem, scene) {
+  collectHealthPack(audioSystem, scene, playerX = null, playerY = null) {
     // Only collect if player is not at full health
-    if (this.health >= GAME_CONFIG.MAX_HEALTH) return;
+    if (this.health >= GAME_CONFIG.MAX_HEALTH) {
+      // Show "Health is Full" message if player position is available
+      if (scene && playerX !== null && playerY !== null) {
+        this.showFloatingText(scene, playerX, playerY - 30, 'Health is Full', '#FFFF00');
+      }
+      return;
+    }
 
     if (audioSystem) {
       audioSystem.sfxHealthPackCollect();
+    }
+
+    // Show floating text if player position is available
+    if (scene && playerX !== null && playerY !== null) {
+      this.showFloatingText(scene, playerX, playerY - 30, `+${GAME_CONFIG.HEALTH_PACK_HEAL_AMOUNT} Health`, '#00FF00');
     }
 
     // Heal the player
@@ -389,7 +557,7 @@ export class ScoringSystem {
     );
   }
 
-  collectBoot(audioSystem, scene) {
+  collectBoot(audioSystem, scene, playerX = null, playerY = null) {
     // Check if we're already at max boot capacity
     if (this.bootSlipPrevention >= GAME_CONFIG.BOOT_MAX_STACK) {
       return; // Don't collect if at max capacity
@@ -397,6 +565,11 @@ export class ScoringSystem {
 
     if (audioSystem) {
       audioSystem.sfxCoinCollect(); // Reuse coin sound for now
+    }
+
+    // Show floating text if player position is available
+    if (scene && playerX !== null && playerY !== null) {
+      this.showFloatingText(scene, playerX, playerY - 30, '+10 Boots', '#D2B48C');
     }
 
     // Add boot slip prevention uses, but cap at maximum
@@ -770,6 +943,14 @@ export class ScoringSystem {
     this.falling = false;
     this.fallStartY = 0;
     this.bootSlipPrevention = 0;
+    this.coinsCollected = 0;
+    this.lastCoinMilestone = 0;
+    
+    // Reset slip comment debounce
+    this.lastSlipCommentTime = 0;
+    
+    // Reset checkpoint comment debounce
+    this.lastCheckpointCommentTime = 0;
     
     this.updateLivesDisplay();
     
@@ -783,6 +964,7 @@ export class ScoringSystem {
     }
     
     this.updateBootDisplay();
+    this.updateCoinDisplay();
     this.updateScoreDisplay();
     this.updateHeightDisplay(GAME_CONFIG.BASE_Y);
     this.setHealth(GAME_CONFIG.MAX_HEALTH);

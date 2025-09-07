@@ -1,6 +1,9 @@
 const { app, BrowserWindow, ipcMain } = require("electron");
 const path = require("path");
 
+// Enable remote module for easier file system access
+require('@electron/remote/main').initialize();
+
 function createWindow() {
   const win = new BrowserWindow({
     width: 480,
@@ -15,8 +18,12 @@ function createWindow() {
       hardwareAcceleration: true,
       // Disable VSync to allow uncapped frame rates
       disableVSync: true,
+      enableRemoteModule: true, // Enable remote module
     },
   });
+
+  // Enable remote module for this window
+  require('@electron/remote/main').enable(win.webContents);
 
   win.setMenuBarVisibility(false);
   win.loadFile(path.join(__dirname, "index.html"));

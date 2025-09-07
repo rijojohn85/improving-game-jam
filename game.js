@@ -12,6 +12,7 @@ import { DebrisSystem } from "./src/DebrisSystem.js";
 import { CoinSystem } from "./src/CoinSystem.js";
 import { HealthPackSystem } from "./src/HealthPackSystem.js";
 import { CheckpointSystem } from "./src/CheckpointSystem.js";
+import { SaveSystem } from "./src/SaveSystem.js";
 
 (() => {
   const { WIDTH: W, HEIGHT: H } = GAME_CONFIG;

@@ -49,6 +49,7 @@ import { HealthPackSystem } from "./src/HealthPackSystem.js";
   // Preload function - loads all textures
   function preload() {
     PixelArt.preloadAllTextures(this);
+    this.load.image('background', './background.png');
   }
 
   // Create function - initializes the game world and systems
@@ -114,9 +115,10 @@ import { HealthPackSystem } from "./src/HealthPackSystem.js";
   // Setup parallax background
   function setupBackground() {
     skyImg = scene.add
-      .image(0, 0, "skytex")
+      .image(-50, -50, "background")
       .setOrigin(0, 0)
       .setScrollFactor(0, 0);
+    skyImg.setScale(0.7);
     mtnFar = scene.add
       .tileSprite(0, H - 180, W, H + 360, "mtn_far")
       .setOrigin(0, 1)

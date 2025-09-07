@@ -287,11 +287,7 @@ export class PixelArt {
 
   static preloadAllTextures(scene) {
     const { MOUNTAINS } = COLORS;
-
-    PixelArt.makePixelSky(scene);
-    PixelArt.makePixelMountains(scene, "mtn_far", MOUNTAINS.FAR, 40, 4);
-    PixelArt.makePixelMountains(scene, "mtn_mid", MOUNTAINS.MID, 70, 4);
-    PixelArt.makePixelMountains(scene, "mtn_near", MOUNTAINS.NEAR, 110, 4);
+    
     PixelArt.createPlatformTextures(scene);
     PixelArt.makePixelPlayerTexture(scene);
     PixelArt.makePixelDebrisTexture(scene);

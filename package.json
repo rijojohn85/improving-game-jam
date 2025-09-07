@@ -3,15 +3,86 @@
   "version": "0.1.1",
   "private": true,
   "main": "main.js",
+  "homepage": "./",
   "scripts": {
     "start": "electron .",
-    "dev": "npx http-server -c-1 -p 8080 ."
+    "dev": "npx http-server -c-1 -p 8080 .",
+    "build": "electron-builder",
+    "build:win": "electron-builder --win",
+    "build:mac": "electron-builder --mac",
+    "build:linux": "electron-builder --linux",
+    "dist": "electron-builder --publish=never"
   },
   "dependencies": {
     "@electron/remote": "^2.1.3",
     "phaser": "^3.80.0"
   },
   "devDependencies": {
-    "electron": "^31.3.0"
+    "electron": "^31.3.0",
+    "electron-builder": "^24.13.3"
+  },
+  "build": {
+    "appId": "com.rijojohn85.pixel-climber",
+    "productName": "Pixel Climber",
+    "directories": {
+      "output": "dist"
+    },
+    "files": [
+      "**/*",
+      "!**/node_modules/*/{CHANGELOG.md,README.md,README,readme.md,readme}",
+      "!**/node_modules/*/{test,__tests__,tests,powered-test,example,examples}",
+      "!**/node_modules/*.d.ts",
+      "!**/node_modules/.bin",
+      "!**/*.{iml,o,hprof,orig,pyc,pyo,rbc,swp,csproj,sln,xproj}",
+      "!.editorconfig",
+      "!**/._*",
+      "!**/{.DS_Store,.git,.hg,.svn,CVS,RCS,SCCS,.gitignore,.gitattributes}",
+      "!**/{__pycache__,thumbs.db,.flowconfig,.idea,.vs,.nyc_output}",
+      "!**/{appveyor.yml,.travis.yml,circle.yml}",
+      "!**/{npm-debug.log,yarn.lock,.yarn-integrity,.yarn-metadata.json}",
+      "!dist/**/*"
+    ],
+    "mac": {
+      "category": "public.app-category.games",
+      "target": [
+        {
+          "target": "dmg",
+          "arch": ["x64", "arm64"]
+        },
+        {
+          "target": "zip",
+          "arch": ["x64", "arm64"]
+        }
+      ]
+    },
+    "win": {
+      "target": [
+        {
+          "target": "nsis",
+          "arch": ["x64", "ia32"]
+        },
+        {
+          "target": "zip",
+          "arch": ["x64", "ia32"]
+        }
+      ]
+    },
+    "linux": {
+      "category": "Game",
+      "target": [
+        {
+          "target": "AppImage",
+          "arch": ["x64"]
+        },
+        {
+          "target": "tar.gz",
+          "arch": ["x64"]
+        }
+      ]
+    },
+    "nsis": {
+      "oneClick": false,
+      "allowToChangeInstallationDirectory": true
+    }
   }
 }

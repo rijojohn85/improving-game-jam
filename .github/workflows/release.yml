@@ -1,0 +1,104 @@
+name: Build and Release Electron App
+
+on:
+  push:
+    tags:
+      - 'v*' # Triggers on version tags like v1.0.0
+
+jobs:
+  build:
+    runs-on: ${{ matrix.os }}
+    
+    strategy:
+      matrix:
+        include:
+          - os: macos-latest
+            platform: mac
+          - os: windows-latest
+            platform: win
+          - os: ubuntu-latest
+            platform: linux
+        
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v4
+        
+      - name: Setup Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: '18'
+          cache: 'npm'
+          
+      - name: Install dependencies
+        run: npm ci
+        
+      - name: Build Electron app
+        run: npm run build:${{ matrix.platform }}
+        env:
+          CSC_IDENTITY_AUTO_DISCOVERY: false # Disable code signing for macOS
+          
+      - name: Upload build artifacts
+        uses: actions/upload-artifact@v4
+        with:
+          name: ${{ matrix.platform }}-build
+          path: dist/
+          retention-days: 1
+
+  release:
+    needs: build
+    runs-on: ubuntu-latest
+    if: startsWith(github.ref, 'refs/tags/')
+    
+    permissions:
+      contents: write
+    
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v4
+        
+      - name: Download all artifacts
+        uses: actions/download-artifact@v4
+        with:
+          path: ./artifacts
+          
+      - name: Display structure of downloaded files
+        run: find ./artifacts -type f -name "*" | head -20
+        
+      - name: Create Release
+        uses: softprops/action-gh-release@v1
+        with:
+          name: Pixel Climber ${{ github.ref_name }}
+          body: |
+            🎮 **Pixel Climber Release ${{ github.ref_name }}**
+            
+            A retro-style vertical climbing game built with Phaser and Electron.
+            
+            ## Downloads
+            - **Windows**: Download the `.exe` installer or `.zip` portable version
+            - **macOS**: Download the `.dmg` installer or `.zip` portable version  
+            - **Linux**: Download the `.AppImage` portable app or `.tar.gz` archive
+            
+            ## Features
+            - Retro pixel art graphics with "Press Start 2P" font
+            - Challenging vertical climbing gameplay
+            - Fall damage system
+            - Collectible coins and health packs
+            - Dynamic debris system
+            - Parallax scrolling backgrounds
+            
+            ## How to Play
+            - Use arrow keys or WASD to move
+            - Jump to climb higher platforms
+            - Avoid falling debris
+            - Collect coins for points
+            - Find health packs to restore health
+            - Try to climb as high as possible!
+            
+            ---
+            *Built with ❤️ using Phaser 3 and Electron*
+          files: |
+            artifacts/**/*
+          draft: false
+          prerelease: false
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}

@@ -9,6 +9,7 @@ export class AudioSystem {
     this.musicStarted = false;
     this.muted = false;
     this.musicTimer = null;
+    this.audioBuffers = new Map(); // Store loaded audio files
   }
 
   ensureAudioContext() {
@@ -74,7 +75,19 @@ export class AudioSystem {
     window.addEventListener("keydown", resume);
   }
 
-  setupAudioUI() {
+  async setupAudioUI() {
+    await this.loadAudio('background-music', 'sounds/background-music.mp3');
+    
+    const startMusic = () => {
+      this.ensureAudioContext();
+      if (this.AC.state === "suspended") this.AC.resume();
+      this.playAudio('background-music', 1, true, this.musicGain);
+      window.removeEventListener("pointerdown", startMusic);
+      window.removeEventListener("keydown", startMusic);
+    };
+    window.addEventListener("pointerdown", startMusic);
+    window.addEventListener("keydown", startMusic);
+    
     const btn = document.getElementById("muteBtn");
     if (!btn) return;
     btn.onclick = () => {

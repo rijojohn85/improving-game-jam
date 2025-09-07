@@ -138,7 +138,6 @@ import { SaveSystem } from "./src/SaveSystem.js";
 
     // Initialize UI and audio
     scoringSystem.initialize();
-    audioSystem.hookAudioResume();
     audioSystem.setupAudioUI();
   }
 

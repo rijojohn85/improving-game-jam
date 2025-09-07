@@ -11,11 +11,17 @@ export class ScoringSystem {
     this.falling = false;
     this.fallStartY = 0;
 
+    // Lives and checkpoint system
+    this.lives = GAME_CONFIG.MAX_LIVES;
+    this.currentCheckpoint = null;
+    this.checkpointData = null;
+
     // UI elements
     this.heightText = null;
     this.hpTextEl = null;
     this.hpFillEl = null;
     this.scoreText = null;
+    this.livesText = null;
   }
 
   initialize() {
@@ -23,9 +29,11 @@ export class ScoringSystem {
     this.hpTextEl = document.getElementById("hptext");
     this.hpFillEl = document.getElementById("hpfill");
     this.scoreText = document.getElementById("score");
+    this.livesText = document.getElementById("lives");
 
     this.setHealth(GAME_CONFIG.MAX_HEALTH);
     this.resetScore();
+    this.updateLivesDisplay();
   }
 
   setHealth(newValue) {
@@ -59,6 +67,45 @@ export class ScoringSystem {
   updateScoreDisplay() {
     if (this.scoreText)
       this.scoreText.textContent = `Score: ${this.score.toLocaleString()}`;
+  }
+
+  updateLivesDisplay() {
+    if (this.livesText) this.livesText.textContent = `Lives: ${this.lives}`;
+  }
+
+  saveCheckpoint(checkpoint) {
+    this.currentCheckpoint = checkpoint;
+    this.checkpointData = {
+      x: checkpoint.spawnX,
+      y: checkpoint.spawnY,
+      heightMeters: checkpoint.heightMeters,
+      score: this.score,
+      bestHeight: this.bestHeight,
+    };
+
+    console.log(`Game saved at checkpoint: ${checkpoint.heightMeters}m`);
+  }
+
+  loseLife() {
+    this.lives--;
+    this.updateLivesDisplay();
+    return this.lives <= 0; // Return true if no lives left
+  }
+
+  respawnAtCheckpoint() {
+    if (this.checkpointData) {
+      return {
+        x: this.checkpointData.x,
+        y: this.checkpointData.y - 50, // Spawn slightly above checkpoint
+        heightMeters: this.checkpointData.heightMeters,
+      };
+    }
+    // Default spawn if no checkpoint
+    return {
+      x: GAME_CONFIG.WIDTH / 2,
+      y: GAME_CONFIG.BASE_Y - 60,
+      heightMeters: 0,
+    };
   }
 
   checkHeightProgress(playerY) {
@@ -158,10 +205,226 @@ export class ScoringSystem {
   gameOver(scene) {
     if (scene) {
       scene.cameras.main.shake(200, 0.01);
+
+      const gameOverUI = this.createGameOverScreen(scene);
+
       scene.time.delayedCall(220, () => {
-        this.resetScore();
-        scene.scene.restart();
+        const isGameOver = this.loseLife();
+
+        if (isGameOver) {
+          // Show final game over screen
+          this.showFinalGameOverScreen(scene);
+        } else {
+          // Respawn at checkpoint
+          this.respawnPlayer(scene);
+        }
       });
     }
+  }
+
+  createGameOverScreen(scene) {
+    // Create a semi-transparent overlay
+    const overlay = scene.add.rectangle(
+      GAME_CONFIG.WIDTH / 2,
+      GAME_CONFIG.HEIGHT / 2,
+      GAME_CONFIG.WIDTH,
+      GAME_CONFIG.HEIGHT,
+      0x000000,
+      0.7
+    );
+    overlay.setScrollFactor(0);
+    overlay.setDepth(100);
+
+    // "You Died" text
+    const deathText = scene.add.text(
+      GAME_CONFIG.WIDTH / 2,
+      GAME_CONFIG.HEIGHT / 2 - 50,
+      "YOU DIED!",
+      {
+        fontSize: "32px",
+        fill: "#ff0000",
+        fontFamily: "monospace",
+        stroke: "#000000",
+        strokeThickness: 2,
+      }
+    );
+    deathText.setOrigin(0.5);
+    deathText.setScrollFactor(0);
+    deathText.setDepth(101);
+
+    // Lives remaining text
+    const livesText = scene.add.text(
+      GAME_CONFIG.WIDTH / 2,
+      GAME_CONFIG.HEIGHT / 2 + 10,
+      `Lives Remaining: ${this.lives - 1}`,
+      {
+        fontSize: "18px",
+        fill: "#ffffff",
+        fontFamily: "monospace",
+      }
+    );
+    livesText.setOrigin(0.5);
+    livesText.setScrollFactor(0);
+    livesText.setDepth(101);
+
+    // Remove after 2 seconds
+    scene.time.delayedCall(2000, () => {
+      overlay.destroy();
+      deathText.destroy();
+      livesText.destroy();
+    });
+
+    return { overlay, deathText, livesText };
+  }
+
+  showFinalGameOverScreen(scene) {
+    // Create permanent game over screen
+    const overlay = scene.add.rectangle(
+      GAME_CONFIG.WIDTH / 2,
+      GAME_CONFIG.HEIGHT / 2,
+      GAME_CONFIG.WIDTH,
+      GAME_CONFIG.HEIGHT,
+      0x000000,
+      0.9
+    );
+    overlay.setScrollFactor(0);
+    overlay.setDepth(1000);
+
+    // Game Over title
+    const gameOverText = scene.add.text(
+      GAME_CONFIG.WIDTH / 2,
+      150,
+      "GAME OVER",
+      {
+        fontSize: "36px",
+        fill: "#ff0000",
+        fontFamily: "monospace",
+        stroke: "#000000",
+        strokeThickness: 3,
+      }
+    );
+    gameOverText.setOrigin(0.5);
+    gameOverText.setScrollFactor(0);
+    gameOverText.setDepth(1001);
+
+    // Final score
+    const finalScoreText = scene.add.text(
+      GAME_CONFIG.WIDTH / 2,
+      220,
+      `Final Score: ${this.score.toLocaleString()}`,
+      {
+        fontSize: "24px",
+        fill: "#ffffff",
+        fontFamily: "monospace",
+      }
+    );
+    finalScoreText.setOrigin(0.5);
+    finalScoreText.setScrollFactor(0);
+    finalScoreText.setDepth(1001);
+
+    // Best height
+    const heightText = scene.add.text(
+      GAME_CONFIG.WIDTH / 2,
+      260,
+      `Best Height: ${this.bestHeight}m`,
+      {
+        fontSize: "20px",
+        fill: "#ffffff",
+        fontFamily: "monospace",
+      }
+    );
+    heightText.setOrigin(0.5);
+    heightText.setScrollFactor(0);
+    heightText.setDepth(1001);
+
+    // Restart button
+    const restartButton = scene.add.text(
+      GAME_CONFIG.WIDTH / 2,
+      350,
+      "RESTART GAME",
+      {
+        fontSize: "20px",
+        fill: "#00ff00",
+        fontFamily: "monospace",
+        backgroundColor: "#004400",
+        padding: { x: 10, y: 5 },
+      }
+    );
+    restartButton.setOrigin(0.5);
+    restartButton.setScrollFactor(0);
+    restartButton.setDepth(1001);
+    restartButton.setInteractive({ useHandCursor: true });
+    restartButton.on("pointerdown", () => {
+      console.log("Restart button clicked!");
+
+      // Simply reload the page to restart everything cleanly
+      window.location.reload();
+    });
+    restartButton.on("pointerover", () => {
+      restartButton.setStyle({ fill: "#ffffff", backgroundColor: "#006600" });
+    });
+    restartButton.on("pointerout", () => {
+      restartButton.setStyle({ fill: "#00ff00", backgroundColor: "#004400" });
+    });
+
+    // Exit button
+    const exitButton = scene.add.text(GAME_CONFIG.WIDTH / 2, 420, "EXIT GAME", {
+      fontSize: "20px",
+      fill: "#ff4444",
+      fontFamily: "monospace",
+      backgroundColor: "#440000",
+      padding: { x: 10, y: 5 },
+    });
+    exitButton.setOrigin(0.5);
+    exitButton.setScrollFactor(0);
+    exitButton.setDepth(1001);
+    exitButton.setInteractive({ useHandCursor: true });
+    exitButton.on("pointerdown", () => {
+      // Close the Electron app
+      if (window.require) {
+        const { ipcRenderer } = window.require("electron");
+        ipcRenderer.send("quit-app");
+      } else {
+        window.close();
+      }
+    });
+    exitButton.on("pointerover", () => {
+      exitButton.setStyle({ fill: "#ffffff", backgroundColor: "#660000" });
+    });
+    exitButton.on("pointerout", () => {
+      exitButton.setStyle({ fill: "#ff4444", backgroundColor: "#440000" });
+    });
+  }
+
+  respawnPlayer(scene) {
+    // Reset health
+    this.setHealth(GAME_CONFIG.MAX_HEALTH);
+
+    // Get respawn position
+    const respawnPos = this.respawnAtCheckpoint();
+
+    // Respawn player at checkpoint
+    const player = scene.children.getByName("player");
+    if (player) {
+      player.setPosition(respawnPos.x, respawnPos.y);
+      player.setVelocity(0, 0);
+
+      // Move camera to respawn location
+      scene.cameras.main.setScroll(0, respawnPos.y - GAME_CONFIG.HEIGHT / 2);
+    }
+
+    console.log(`Player respawned at checkpoint: ${respawnPos.heightMeters}m`);
+  }
+
+  resetGame() {
+    this.lives = GAME_CONFIG.MAX_LIVES;
+    this.health = GAME_CONFIG.MAX_HEALTH;
+    this.score = 0;
+    this.bestHeight = 0;
+    this.lastHeight = 0;
+    this.currentCheckpoint = null;
+    this.checkpointData = null;
+    this.falling = false;
+    this.fallStartY = 0;
   }
 }

@@ -13,6 +13,7 @@ export class Player {
   initialize(scene, startX, startY) {
     // Create player sprite
     this.sprite = scene.physics.add.sprite(startX, startY, "player_px_32x48");
+    this.sprite.name = "player"; // Add name for easy finding
 
     // Physics body sized so bottom of body == bottom of sprite (no visual gap)
     this.sprite.body.setSize(28, 46).setOffset(2, 2); // 2 + 46 = 48 -> bottoms align

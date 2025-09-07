@@ -12,6 +12,7 @@ import { DebrisSystem } from "./src/DebrisSystem.js";
 import { CoinSystem } from "./src/CoinSystem.js";
 import { HealthPackSystem } from "./src/HealthPackSystem.js";
 import { CheckpointSystem } from "./src/CheckpointSystem.js";
+import { BootSystem } from "./src/BootSystem.js";
 import { SaveSystem } from "./src/SaveSystem.js";
 import { StartScene } from "./src/StartScene.js";
 
@@ -29,6 +30,7 @@ export class GameScene extends Phaser.Scene {
     this.coinSystem = new CoinSystem();
     this.healthPackSystem = new HealthPackSystem();
     this.checkpointSystem = new CheckpointSystem();
+    this.bootSystem = new BootSystem();
     
     // Game state variables
     this.mtnFar = null;
@@ -48,6 +50,19 @@ export class GameScene extends Phaser.Scene {
     this.load.image('right1', './sprites/right1.png');
     this.load.image('right2', './sprites/right2.png');
     
+    // Load item sprites
+    this.load.image('coin1', './sprites/coin1.png');
+    this.load.image('coin2', './sprites/coin2.png');
+    this.load.image('coin3', './sprites/coin3.png');
+    this.load.image('medi1', './sprites/medi1.png');
+    this.load.image('medi2', './sprites/medi2.png');
+    this.load.image('medi3', './sprites/medi3.png');
+    this.load.image('boot1', './sprites/boot1.png');
+    this.load.image('boot2', './sprites/boot2.png');
+    this.load.image('boot3', './sprites/boot3.png');
+    this.load.image('boot4', './sprites/boot4.png');
+    this.load.image('heart', './sprites/heart.png');
+    
     PixelArt.preloadAllTextures(this);
     this.load.image('background', './background.png');
   }
@@ -66,6 +81,7 @@ export class GameScene extends Phaser.Scene {
         this.coinSystem.reset();
         this.healthPackSystem.reset();
         this.checkpointSystem.reset();
+        this.bootSystem.reset();
         this.scoringSystem.resetGame();
 
         // Reset player position
@@ -117,6 +133,7 @@ export class GameScene extends Phaser.Scene {
     this.coinSystem.initialize(this);
     this.healthPackSystem.initialize(this);
     this.checkpointSystem.initialize(this);
+    this.bootSystem.initialize(this);
 
     // Setup all collision interactions
     this.debrisSystem.setupCollisions(
@@ -129,6 +146,7 @@ export class GameScene extends Phaser.Scene {
     this.coinSystem.setupCollisions(this.player, this.scoringSystem, this.audioSystem, this);
     this.healthPackSystem.setupCollisions(this.player, this.scoringSystem, this.audioSystem, this);
     this.checkpointSystem.setupCollisions(this.player, this.scoringSystem, this.audioSystem, this);
+    this.bootSystem.setupCollisions(this.player, this.scoringSystem, this.audioSystem, this);
 
     // Setup camera
     const cam = this.cameras.main;
@@ -136,7 +154,7 @@ export class GameScene extends Phaser.Scene {
     cam.startFollow(playerSprite, true, 0.1, 0.1);
 
     // Initialize UI and audio
-    this.scoringSystem.initialize();
+    this.scoringSystem.initialize(this);
     this.audioSystem.setupAudioUI();
 
     // Setup debug toggle
@@ -244,12 +262,14 @@ export class GameScene extends Phaser.Scene {
       playerState,
       this.coinSystem,
       this.healthPackSystem,
-      this.checkpointSystem
+      this.checkpointSystem,
+      this.bootSystem
     );
     this.debrisSystem.update(this);
     this.coinSystem.update(this);
     this.healthPackSystem.update(this);
     this.checkpointSystem.update(this);
+    this.bootSystem.update(this);
 
     // Update scoring and UI
     this.scoringSystem.checkHeightProgress(playerPos.y);

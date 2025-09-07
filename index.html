@@ -14,43 +14,6 @@
     <link rel="stylesheet" href="style.css" />
   </head>
   <body>
-    <div id="hud">
-      Height: <b id="height">0</b> m &nbsp;•&nbsp; Health:
-      <b id="hptext">100</b>
-      <button id="muteBtn" title="Mute / Unmute" style="margin-left: 8px">
-        🔊
-      </button>
-      <div
-        id="hpbar"
-        style="
-          margin-top: 6px;
-          width: 180px;
-          height: 10px;
-          background: rgba(255, 255, 255, 0.15);
-          border-radius: 6px;
-          overflow: hidden;
-        "
-      >
-        <div
-          id="hpfill"
-          style="
-            height: 100%;
-            width: 100%;
-            background: linear-gradient(90deg, #34d399, #fbbf24, #f87171);
-          "
-        ></div>
-      </div>
-      <div style="margin-top: 8px">
-        <div id="score" style="font-weight: bold; color: #fbbf24">Score: 0</div>
-        <div
-          id="lives"
-          style="font-weight: bold; color: #ef4444; margin-top: 4px"
-        >
-          Lives: 3
-        </div>
-      </div>
-    </div>
-
     <!-- Load Phaser locally -->
     <script src="./node_modules/phaser/dist/phaser.min.js"></script>
     <script type="module" src="./game.js"></script>

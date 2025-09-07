@@ -17,44 +17,178 @@ export class ScoringSystem {
     this.currentCheckpoint = null;
     this.checkpointData = null;
 
-    // UI elements
+    // Boot system
+    this.bootSlipPrevention = 0; // Number of slip preventions remaining
+
+    // UI elements (now canvas-based)
     this.heightText = null;
-    this.hpTextEl = null;
-    this.hpFillEl = null;
+    this.healthText = null;
+    this.healthBar = null;
+    this.healthBarBorder = null;
+    this.healthBarFill = null;
+    this.healthBarShine = null;
     this.scoreText = null;
     this.livesText = null;
+    this.heartSprites = [];
+    this.bootText = null;
 
     // Save system
     this.saveSystem = new SaveSystem();
   }
 
-  initialize() {
-    this.heightText = document.getElementById("height");
-    this.hpTextEl = document.getElementById("hptext");
-    this.hpFillEl = document.getElementById("hpfill");
-    this.scoreText = document.getElementById("score");
-    this.livesText = document.getElementById("lives");
-
+  initialize(scene) {
+    // Store reference to scene for creating UI elements
+    this.scene = scene;
+    
+    // Create canvas-based UI elements
+    this.createCanvasUI(scene);
+    
     this.setHealth(GAME_CONFIG.MAX_HEALTH);
     this.resetScore();
     this.updateLivesDisplay();
+    this.updateBootDisplay();
 
     // Initialize save system
     this.saveSystem.initialize();
   }
 
+  createCanvasUI(scene) {
+    const { WIDTH, HEIGHT } = GAME_CONFIG;
+    
+    // Create UI container for all HUD elements
+    const uiContainer = scene.add.container(0, 0).setScrollFactor(0).setDepth(1000);
+    
+    // First line: Height (left) and Score (right) - BIGGER TEXT
+    this.heightText = scene.add.text(10, 10, 'Height: 0m', {
+      fontSize: '12px',
+      fill: '#ffffff',
+      fontFamily: '"Press Start 2P"',
+      backgroundColor: 'rgba(0,0,0,0.7)',
+      padding: { x: 3, y: 2 }
+    }).setScrollFactor(0).setDepth(1001);
+    
+    this.scoreText = scene.add.text(WIDTH - 10, 10, 'Score: 0', {
+      fontSize: '12px',
+      fill: '#fbbf24',
+      fontFamily: '"Press Start 2P"',
+      backgroundColor: 'rgba(0,0,0,0.7)',
+      padding: { x: 3, y: 2 }
+    }).setOrigin(1, 0).setScrollFactor(0).setDepth(1001);
+    
+    // Second line: Health bar LEFT ALIGNED with health text after it
+    const healthBarStartX = 10;
+    
+    // Health bar background with border (left aligned)
+    this.healthBarBorder = scene.add.rectangle(healthBarStartX, 35, 122, 14, 0x222222)
+      .setOrigin(0, 0.5).setScrollFactor(0).setDepth(1001);
+    
+    this.healthBar = scene.add.rectangle(healthBarStartX + 1, 35, 120, 12, 0x444444)
+      .setOrigin(0, 0.5).setScrollFactor(0).setDepth(1002);
+    
+    // Health bar fill with gradient effect (left aligned)
+    this.healthBarFill = scene.add.rectangle(healthBarStartX + 1, 35, 120, 12, 0x00ff44)
+      .setOrigin(0, 0.5).setScrollFactor(0).setDepth(1003);
+    
+    // Health bar shine effect (left aligned)
+    this.healthBarShine = scene.add.rectangle(healthBarStartX + 1, 31, 120, 4, 0xffffff, 0.3)
+      .setOrigin(0, 0.5).setScrollFactor(0).setDepth(1004);
+    
+    // Health text (positioned after health bar) - BIGGER SIZE
+    this.healthText = scene.add.text(healthBarStartX + 135, 35, '100', {
+      fontSize: '16px',
+      fill: '#00ff44',
+      fontFamily: '"Press Start 2P"',
+      backgroundColor: 'rgba(0,0,0,0.7)',
+      padding: { x: 4, y: 3 }
+    }).setOrigin(0, 0.5).setScrollFactor(0).setDepth(1001);
+    
+    // Third line: Lives (left) and Boots (right) - BIGGER TEXT
+    this.livesText = scene.add.text(10, 60, 'Lives:', {
+      fontSize: '12px',
+      fill: '#ef4444',
+      fontFamily: '"Press Start 2P"',
+      backgroundColor: 'rgba(0,0,0,0.7)',
+      padding: { x: 3, y: 2 }
+    }).setScrollFactor(0).setDepth(1001);
+    
+    // Create heart sprites for lives display
+    this.heartSprites = [];
+    for (let i = 0; i < GAME_CONFIG.MAX_LIVES; i++) {
+      const heart = scene.add.image(100 + (i * 22), 68, 'heart')
+        .setDisplaySize(20, 20)
+        .setScrollFactor(0)
+        .setDepth(1001);
+      this.heartSprites.push(heart);
+    }
+    
+    this.bootText = scene.add.text(WIDTH - 10, 60, 'Boots: 0/15', {
+      fontSize: '12px',
+      fill: '#D2B48C',
+      fontFamily: '"Press Start 2P"',
+      backgroundColor: 'rgba(0,0,0,0.7)',
+      padding: { x: 3, y: 2 }
+    }).setOrigin(1, 0).setScrollFactor(0).setDepth(1001);
+  }
+
   setHealth(newValue) {
     this.health = Phaser.Math.Clamp(newValue, 0, GAME_CONFIG.MAX_HEALTH);
-    if (this.hpTextEl) this.hpTextEl.textContent = String(this.health);
-    if (this.hpFillEl)
-      this.hpFillEl.style.width =
-        (this.health / GAME_CONFIG.MAX_HEALTH) * 100 + "%";
-    if (this.hpFillEl) {
-      const c = this.health / GAME_CONFIG.MAX_HEALTH;
-      this.hpFillEl.style.filter = `saturate(${0.8 + 0.4 * c}) brightness(${
-        0.9 + 0.2 * c
-      })`;
+    
+    const healthPercent = this.health / GAME_CONFIG.MAX_HEALTH;
+    
+    // Determine colors based on health level
+    let fillColor, textColor;
+    if (healthPercent > 0.6) {
+      fillColor = 0x00ff44; // Bright green
+      textColor = '#00ff44';
+    } else if (healthPercent > 0.3) {
+      fillColor = 0xffaa00; // Orange
+      textColor = '#ffaa00';
+    } else {
+      fillColor = 0xff2244; // Bright red
+      textColor = '#ff2244';
     }
+    
+    // Update health text with color and pulsing effect for low health
+    if (this.healthText) {
+      this.healthText.setText(`${this.health}`);
+      this.healthText.setStyle({ 
+        fill: textColor, 
+        fontFamily: '"Press Start 2P"',
+        fontSize: '16px'
+      });
+      
+      // Add pulsing effect for critical health
+      if (healthPercent <= 0.2) {
+        this.healthText.scene.tweens.add({
+          targets: this.healthText,
+          alpha: 0.4,
+          duration: 300,
+          yoyo: true,
+          repeat: -1
+        });
+      } else {
+        // Stop pulsing if health is above critical
+        this.healthText.scene.tweens.killTweensOf(this.healthText);
+        this.healthText.setAlpha(1);
+      }
+    }
+    
+    // Update health bar fill (left aligned positioning)
+    if (this.healthBarFill) {
+      const healthBarStartX = 10;
+      this.healthBarFill.setScale(healthPercent, 1);
+      this.healthBarFill.setFillStyle(fillColor);
+      // Keep it left-aligned, no need to adjust position
+    }
+    
+    // Update health bar shine effect (left aligned positioning)
+    if (this.healthBarShine) {
+      this.healthBarShine.setScale(healthPercent, 1);
+      // Make shine more prominent on higher health
+      this.healthBarShine.setAlpha(0.2 + (healthPercent * 0.3));
+      // Keep it left-aligned, no need to adjust position
+    }
+    
     return this.health <= 0; // Return true if player should die
   }
 
@@ -72,12 +206,33 @@ export class ScoringSystem {
   }
 
   updateScoreDisplay() {
-    if (this.scoreText)
-      this.scoreText.textContent = `Score: ${this.score.toLocaleString()}`;
+    if (this.scoreText) {
+      this.scoreText.setText(`Score: ${this.score.toLocaleString()}`);
+    }
   }
 
   updateLivesDisplay() {
-    if (this.livesText) this.livesText.textContent = `Lives: ${this.lives}`;
+    // Update heart sprites visibility based on current lives
+    if (this.heartSprites && this.heartSprites.length > 0) {
+      for (let i = 0; i < this.heartSprites.length; i++) {
+        if (i < this.lives) {
+          // Show heart if player has this many lives
+          this.heartSprites[i].setVisible(true);
+          this.heartSprites[i].setAlpha(1);
+        } else {
+          // Hide or gray out heart if player doesn't have this life
+          this.heartSprites[i].setVisible(true);
+          this.heartSprites[i].setAlpha(0.3); // Make it semi-transparent
+          this.heartSprites[i].setTint(0x444444); // Gray it out
+        }
+      }
+    }
+  }
+
+  updateBootDisplay() {
+    if (this.bootText) {
+      this.bootText.setText(`Boots: ${this.bootSlipPrevention}/${GAME_CONFIG.BOOT_MAX_STACK}`);
+    }
   }
 
   saveCheckpoint(checkpoint) {
@@ -95,6 +250,28 @@ export class ScoringSystem {
 
   loseLife() {
     this.lives--;
+    
+    // Add a dramatic effect when losing a life
+    if (this.heartSprites && this.heartSprites[this.lives]) {
+      const lostHeart = this.heartSprites[this.lives];
+      
+      // Animate the heart being lost
+      if (lostHeart.scene && lostHeart.scene.tweens) {
+        lostHeart.scene.tweens.add({
+          targets: lostHeart,
+          scaleX: 1.5,
+          scaleY: 1.5,
+          alpha: 0.3,
+          duration: 300,
+          ease: 'Power2.easeOut',
+          onComplete: () => {
+            lostHeart.setScale(1);
+            lostHeart.setTint(0x444444);
+          }
+        });
+      }
+    }
+    
     this.updateLivesDisplay();
     return this.lives <= 0; // Return true if no lives left
   }
@@ -131,7 +308,9 @@ export class ScoringSystem {
   updateHeightDisplay(playerY) {
     const climbed = Math.max(0, Math.floor((-playerY + 700) / 10));
     if (climbed > this.bestHeight) this.bestHeight = climbed;
-    if (this.heightText) this.heightText.textContent = String(this.bestHeight);
+    if (this.heightText) {
+      this.heightText.setText(`Height: ${this.bestHeight}m`);
+    }
   }
 
   applyFallDamage(dropPx, audioSystem, scene, player = null) {
@@ -208,6 +387,48 @@ export class ScoringSystem {
     console.log(
       `Health pack collected! Healed ${actualHealing} HP. Current health: ${this.health}`
     );
+  }
+
+  collectBoot(audioSystem, scene) {
+    // Check if we're already at max boot capacity
+    if (this.bootSlipPrevention >= GAME_CONFIG.BOOT_MAX_STACK) {
+      return; // Don't collect if at max capacity
+    }
+
+    if (audioSystem) {
+      audioSystem.sfxCoinCollect(); // Reuse coin sound for now
+    }
+
+    // Add boot slip prevention uses, but cap at maximum
+    const newBootCount = this.bootSlipPrevention + GAME_CONFIG.BOOT_SLIP_PREVENTION_USES;
+    this.bootSlipPrevention = Math.min(newBootCount, GAME_CONFIG.BOOT_MAX_STACK);
+    this.updateBootDisplay();
+
+    // Add some score for collecting boot
+    this.addScore(100); // Higher score than health pack
+
+    if (scene) {
+      // Orange flash to indicate boot collection
+      scene.cameras.main.flash(120, 255, 165, 0, false);
+    }
+
+    console.log(
+      `Boot collected! Boot count: ${this.bootSlipPrevention}/${GAME_CONFIG.BOOT_MAX_STACK}`
+    );
+  }
+
+  useBootSlipPrevention() {
+    if (this.bootSlipPrevention > 0) {
+      this.bootSlipPrevention--;
+      this.updateBootDisplay();
+      console.log(`Boot slip prevention used! Remaining: ${this.bootSlipPrevention}`);
+      return true;
+    }
+    return false;
+  }
+
+  hasBootSlipPrevention() {
+    return this.bootSlipPrevention > 0;
   }
 
   // Fall detection methods
@@ -328,9 +549,9 @@ export class ScoringSystem {
       GAME_CONFIG.HEIGHT / 2 - 50,
       "YOU DIED!",
       {
-        fontSize: "32px",
+        fontSize: "24px",
         fill: "#ff0000",
-        fontFamily: "monospace",
+        fontFamily: '"Press Start 2P"',
         stroke: "#000000",
         strokeThickness: 2,
       }
@@ -345,9 +566,9 @@ export class ScoringSystem {
       GAME_CONFIG.HEIGHT / 2 + 10,
       `Lives Remaining: ${this.lives - 1}`,
       {
-        fontSize: "18px",
+        fontSize: "12px",
         fill: "#ffffff",
-        fontFamily: "monospace",
+        fontFamily: '"Press Start 2P"',
       }
     );
     livesText.setOrigin(0.5);
@@ -386,9 +607,9 @@ export class ScoringSystem {
       120,
       "GAME OVER",
       {
-        fontSize: "36px",
+        fontSize: "28px",
         fill: "#ff0000",
-        fontFamily: "monospace",
+        fontFamily: '"Press Start 2P"',
         stroke: "#000000",
         strokeThickness: 3,
       }
@@ -403,9 +624,9 @@ export class ScoringSystem {
       180,
       `Final Score: ${this.score.toLocaleString()}`,
       {
-        fontSize: "20px",
+        fontSize: "14px",
         fill: "#ffffff",
-        fontFamily: "monospace",
+        fontFamily: '"Press Start 2P"',
       }
     );
     finalScoreText.setOrigin(0.5);
@@ -418,9 +639,9 @@ export class ScoringSystem {
       210,
       `Max Height: ${this.bestHeight}m`,
       {
-        fontSize: "20px",
+        fontSize: "14px",
         fill: "#ffffff",
-        fontFamily: "monospace",
+        fontFamily: '"Press Start 2P"',
       }
     );
     finalHeightText.setOrigin(0.5);
@@ -433,9 +654,9 @@ export class ScoringSystem {
       280,
       "VIEW LEADERBOARD",
       {
-        fontSize: "18px",
+        fontSize: "12px",
         fill: "#44aaff",
-        fontFamily: "monospace",
+        fontFamily: '"Press Start 2P"',
         backgroundColor: "#002244",
         padding: { x: 15, y: 8 },
       }
@@ -460,9 +681,9 @@ export class ScoringSystem {
       350,
       "RESTART GAME",
       {
-        fontSize: "20px",
+        fontSize: "14px",
         fill: "#00ff00",
-        fontFamily: "monospace",
+        fontFamily: '"Press Start 2P"',
         backgroundColor: "#004400",
         padding: { x: 10, y: 5 },
       }
@@ -486,9 +707,9 @@ export class ScoringSystem {
 
     // Exit button
     const exitButton = scene.add.text(GAME_CONFIG.WIDTH / 2, 420, "EXIT GAME", {
-      fontSize: "20px",
+      fontSize: "14px",
       fill: "#ff4444",
-      fontFamily: "monospace",
+      fontFamily: '"Press Start 2P"',
       backgroundColor: "#440000",
       padding: { x: 10, y: 5 },
     });
@@ -548,9 +769,22 @@ export class ScoringSystem {
     this.checkpointData = null;
     this.falling = false;
     this.fallStartY = 0;
+    this.bootSlipPrevention = 0;
     
     this.updateLivesDisplay();
-    this.updateScore();
-    this.updateHeight(0);
+    
+    // Reset heart sprites to full visibility
+    if (this.heartSprites && this.heartSprites.length > 0) {
+      for (let i = 0; i < this.heartSprites.length; i++) {
+        this.heartSprites[i].setVisible(true);
+        this.heartSprites[i].setAlpha(1);
+        this.heartSprites[i].clearTint();
+      }
+    }
+    
+    this.updateBootDisplay();
+    this.updateScoreDisplay();
+    this.updateHeightDisplay(GAME_CONFIG.BASE_Y);
+    this.setHealth(GAME_CONFIG.MAX_HEALTH);
   }
 }

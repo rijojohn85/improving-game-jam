@@ -87,7 +87,8 @@ export class CoinSystem {
     // Don't spawn coins if the group isn't initialized yet
     if (!this.coinsGroup) return;
 
-    const coin = this.coinsGroup.create(x, y, "coin");
+    // Use coin1 as the base sprite (will be animated)
+    const coin = this.coinsGroup.create(x, y, "coin1");
     if (!coin) return;
 
     console.log(
@@ -97,25 +98,42 @@ export class CoinSystem {
     );
 
     coin.setDepth(3); // Above debris but below UI
+    
+    // Scale the sprite to match the original COIN_SIZE (24px)
+    const targetSize = GAME_CONFIG.COIN_SIZE;
+    coin.setDisplaySize(targetSize, targetSize);
+    
     coin.body.setSize(18, 18, true); // Larger hitbox for easier collection
+    
+    // Start the coin spinning animation
+    if (coin.scene.anims.exists('coin_spin')) {
+      coin.play('coin_spin');
+    } else {
+      // If animation doesn't exist yet, try to create it
+      console.warn('coin_spin animation not found, attempting to create...');
+      if (coin.scene.textures.exists('coin1') && coin.scene.textures.exists('coin2') && coin.scene.textures.exists('coin3')) {
+        coin.scene.anims.create({
+          key: 'coin_spin',
+          frames: [
+            { key: 'coin1' },
+            { key: 'coin2' },
+            { key: 'coin3' },
+            { key: 'coin2' }
+          ],
+          frameRate: 8,
+          repeat: -1
+        });
+        coin.play('coin_spin');
+      }
+    }
 
-    // Add gentle floating animation
+    // Add gentle floating animation (no scaling)
     const scene = coin.scene;
     if (scene && scene.tweens) {
       scene.tweens.add({
         targets: coin,
         y: y - 5,
         duration: 1500,
-        yoyo: true,
-        repeat: -1,
-        ease: "Sine.easeInOut",
-      });
-
-      scene.tweens.add({
-        targets: coin,
-        scaleX: 1.1,
-        scaleY: 1.1,
-        duration: 1000,
         yoyo: true,
         repeat: -1,
         ease: "Sine.easeInOut",

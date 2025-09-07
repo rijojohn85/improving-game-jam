@@ -89,7 +89,8 @@ export class HealthPackSystem {
     // Don't spawn health packs if the group isn't initialized yet
     if (!this.healthPacksGroup) return;
 
-    const healthPack = this.healthPacksGroup.create(x, y, "healthpack");
+    // Use medi1 as the base sprite (will be animated)
+    const healthPack = this.healthPacksGroup.create(x, y, "medi1");
     if (!healthPack) return;
 
     console.log(
@@ -99,21 +100,38 @@ export class HealthPackSystem {
     );
 
     healthPack.setDepth(4); // Above coins and debris
+    
+    // Scale the sprite to match the original HEALTH_PACK_SIZE (24px)
+    const targetSize = GAME_CONFIG.HEALTH_PACK_SIZE;
+    healthPack.setDisplaySize(targetSize, targetSize);
+    
     healthPack.body.setSize(20, 20, true); // Good hitbox for collection
+    
+    // Start the health pack pulsing animation
+    if (healthPack.scene.anims.exists('healthpack_pulse')) {
+      healthPack.play('healthpack_pulse');
+    } else {
+      // If animation doesn't exist yet, try to create it
+      console.warn('healthpack_pulse animation not found, attempting to create...');
+      if (healthPack.scene.textures.exists('medi1') && healthPack.scene.textures.exists('medi2') && healthPack.scene.textures.exists('medi3')) {
+        healthPack.scene.anims.create({
+          key: 'healthpack_pulse',
+          frames: [
+            { key: 'medi1' },
+            { key: 'medi2' },
+            { key: 'medi3' },
+            { key: 'medi2' }
+          ],
+          frameRate: 6,
+          repeat: -1
+        });
+        healthPack.play('healthpack_pulse');
+      }
+    }
 
-    // Add gentle pulsing animation to indicate healing power
+    // Add gentle floating animation (no scaling)
     const scene = healthPack.scene;
     if (scene && scene.tweens) {
-      scene.tweens.add({
-        targets: healthPack,
-        scaleX: 1.2,
-        scaleY: 1.2,
-        duration: 800,
-        yoyo: true,
-        repeat: -1,
-        ease: "Sine.easeInOut",
-      });
-
       // Add slight vertical bob
       scene.tweens.add({
         targets: healthPack,

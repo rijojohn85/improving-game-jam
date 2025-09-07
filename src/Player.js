@@ -133,8 +133,8 @@ export class Player {
         
         // Apply friction-based speed and max speed scaling for all platform types
         if (friction < 0.7) {
-          // Ice platforms: slippery, moderate speed increase, harder to control
-          speedScale = 1.6 + (0.7 - friction) * 1.2; // Reduced from 1.8 + 1.5 multiplier
+          // Ice platforms: slippery, moderate speed increase, harder to control (reduced speed boost)
+          speedScale = 1.3 + (0.7 - friction) * 0.8; // Further reduced from 1.6 + 1.2 multiplier
           onLowFriction = true;
         } else if (friction > 1.2) {
           // Dirt platforms: high friction, significantly reduced speed for realism
@@ -174,8 +174,8 @@ export class Player {
     // Max speed is significantly affected by friction
     let maxSpeedMultiplier;
     if (friction < 0.7) {
-      // Ice: much higher max speed
-      maxSpeedMultiplier = speedScale * 0.8; 
+      // Ice: higher max speed but more controlled (reduced multiplier)
+      maxSpeedMultiplier = speedScale * 0.65; // Reduced from 0.8 to make ice less wild
     } else if (friction > 1.2) {
       // Dirt: dramatically reduced max speed - high friction makes you very slow
       maxSpeedMultiplier = Math.max(0.2, 0.8 - (friction - 1.0)); // Very low max speed on high friction
@@ -257,35 +257,94 @@ export class Player {
         // Platform-specific behavior when no input and no active sliding
         if (onLowFriction && this._iceSlideTimer === 0) {
           if (!this._wasGrounded) {
-            // Just landed on ice: slide in direction from previous platform
-            let slideSpeed = Math.min(moveSpeed * 0.8, maxSpeedX); // Respect max speed
-            let dir = 0;
-            if (this._lastPlatformX !== null && currentPlatform) {
-              dir = Math.sign(currentPlatform.x - this._lastPlatformX);
-              if (dir === 0) dir = 1; // Default to right if perfectly vertical
-            } else {
-              dir = Math.sign(this._lastAirVX) || 1;
+            // Just landed on ice: check if we have boot protection
+            const scene = this.sprite.scene;
+            let shouldSlide = true;
+            
+            if (scene && scene.scoringSystem && scene.scoringSystem.hasBootSlipPrevention() && currentPlatform) {
+              // Use boot to modify ice platform properties to be like dirt
+              if (scene.scoringSystem.useBootSlipPrevention()) {
+                // Temporarily change ice platform properties to dirt-like
+                currentPlatform.friction = 1.2; // Same as dirt
+                currentPlatform.damageMultiplier = 0.7; // Same as dirt
+                currentPlatform.bootModified = true; // Mark as modified by boot
+                
+                // Update platform detection for this frame
+                friction = 1.2;
+                speedScale = Math.max(0.5, 1.2 - friction * 0.4); // Same calculation as dirt
+                onLowFriction = false; // No longer low friction
+                
+                shouldSlide = false;
+                
+                console.log(`Boot used! Ice platform converted to dirt-like properties. Remaining boots: ${scene.scoringSystem.bootSlipPrevention}`);
+                
+                // Show visual feedback for boot protection
+                if (scene.cameras && scene.cameras.main) {
+                  scene.cameras.main.flash(80, 139, 69, 19, false); // Brown flash for boot protection
+                }
+              }
             }
-            this.sprite.setVelocityX(slideSpeed * dir);
-            this._lockedAirVX = slideSpeed * dir;
             
-            // Start random sliding timer
-            this._iceSlideTimer = Math.random() * 180 + 60; // 1-4 seconds at 60fps
-            this._iceSlideDirection = Math.random() < 0.5 ? -1 : 1;
-          } else {
-            // Start new random slide period only if player is not moving horizontally
-            const currentVX = this.sprite.body.velocity.x;
-            const isNearlyStationary = Math.abs(currentVX) < moveSpeed * 0.3; // Increased threshold from 0.2 to 0.3
-            
-            // Debug logging
-            if (Math.random() < 0.1) { // Log occasionally
-              console.log(`Ice check: currentVX=${currentVX.toFixed(2)}, threshold=${(moveSpeed * 0.3).toFixed(2)}, stationary=${isNearlyStationary}, slideChance=${GAME_CONFIG.ICE_SLIDE_CHANCE}`);
-            }
-            
-            if (isNearlyStationary && Math.random() < GAME_CONFIG.ICE_SLIDE_CHANCE) {
-              this._iceSlideTimer = Math.random() * 120 + 60;
+            if (shouldSlide) {
+              // Slide in direction from previous platform (reduced speed for better control)
+              let slideSpeed = Math.min(moveSpeed * 0.2, maxSpeedX * 0.6); // Much lower speed multiplier for landing slide
+              let dir = 0;
+              if (this._lastPlatformX !== null && currentPlatform) {
+                dir = Math.sign(currentPlatform.x - this._lastPlatformX);
+                if (dir === 0) dir = 1; // Default to right if perfectly vertical
+              } else {
+                dir = Math.sign(this._lastAirVX) || 1;
+              }
+              this.sprite.setVelocityX(slideSpeed * dir);
+              this._lockedAirVX = slideSpeed * dir;
+              
+              // Start random sliding timer (shorter duration)
+              this._iceSlideTimer = Math.random() * 120 + 30; // 0.5-2.5 seconds at 60fps (reduced from 1-4 seconds)
               this._iceSlideDirection = Math.random() < 0.5 ? -1 : 1;
-              console.log(`Starting ice slide! Timer=${this._iceSlideTimer}, direction=${this._iceSlideDirection}`);
+            }
+          } else {
+            // Already on ice platform - check if boots can prevent random sliding
+            const scene = this.sprite.scene;
+            let canStartRandomSlide = true;
+            
+            if (scene && scene.scoringSystem && scene.scoringSystem.hasBootSlipPrevention() && currentPlatform && !currentPlatform.bootModified) {
+              // Use boot to modify ice platform properties to prevent random sliding
+              if (scene.scoringSystem.useBootSlipPrevention()) {
+                currentPlatform.friction = 1.2; // Same as dirt
+                currentPlatform.damageMultiplier = 0.7; // Same as dirt
+                currentPlatform.bootModified = true; // Mark as modified by boot
+                
+                // Update platform detection for this frame
+                friction = 1.2;
+                speedScale = Math.max(0.5, 1.2 - friction * 0.4); // Same calculation as dirt
+                onLowFriction = false; // No longer low friction
+                
+                canStartRandomSlide = false;
+                
+                console.log(`Boot used to prevent random sliding! Ice platform converted to dirt-like properties. Remaining boots: ${scene.scoringSystem.bootSlipPrevention}`);
+                
+                // Show visual feedback for boot protection
+                if (scene.cameras && scene.cameras.main) {
+                  scene.cameras.main.flash(80, 139, 69, 19, false); // Brown flash for boot protection
+                }
+              }
+            }
+            
+            if (canStartRandomSlide) {
+              // Start new random slide period only if player is not moving horizontally
+              const currentVX = this.sprite.body.velocity.x;
+              const isNearlyStationary = Math.abs(currentVX) < moveSpeed * 0.3; // Increased threshold from 0.2 to 0.3
+              
+              // Debug logging
+              if (Math.random() < 0.1) { // Log occasionally
+                console.log(`Ice check: currentVX=${currentVX.toFixed(2)}, threshold=${(moveSpeed * 0.3).toFixed(2)}, stationary=${isNearlyStationary}, slideChance=${GAME_CONFIG.ICE_SLIDE_CHANCE}`);
+              }
+              
+              if (isNearlyStationary && Math.random() < GAME_CONFIG.ICE_SLIDE_CHANCE) {
+                this._iceSlideTimer = Math.random() * 120 + 60;
+                this._iceSlideDirection = Math.random() < 0.5 ? -1 : 1;
+                console.log(`Starting ice slide! Timer=${this._iceSlideTimer}, direction=${this._iceSlideDirection}`);
+              }
             }
           }
         }
@@ -293,11 +352,11 @@ export class Player {
         // Handle platform-specific momentum behavior (when not actively sliding)
         if (this._iceSlideTimer === 0) {
           if (onLowFriction) {
-            // On ice platforms, maintain more momentum and slide more
+            // On ice platforms, maintain more momentum but with better control
             const currentVX = this.sprite.body.velocity.x;
             if (Math.abs(currentVX) > moveSpeed * 0.1) {
-              // Reduce velocity more quickly on ice to prevent excessive sliding
-              let newVX = currentVX * 0.15;
+              // Reduce velocity more aggressively on ice to prevent excessive sliding
+              let newVX = currentVX * 0.8; // Increased from 0.15 to reduce sliding
               newVX = Phaser.Math.Clamp(newVX, -maxSpeedX, maxSpeedX);
               this.sprite.setVelocityX(newVX);
             }
@@ -315,6 +374,11 @@ export class Player {
       if (currentPlatform) {
         this._lastPlatformX = currentPlatform.x;
         this._lastPlatformY = currentPlatform.y;
+        
+        // Reset ice platform tracking if we're not on an ice platform
+        if (!onLowFriction) {
+          this._lastIcePlatformId = null;
+        }
       }
       
       // Final velocity clamp to ensure we never exceed max speed on ground
@@ -325,6 +389,9 @@ export class Player {
     } else {
       // Reset ice sliding when airborne
       this._iceSlideTimer = 0;
+      
+      // Reset ice platform tracking when leaving ground
+      this._lastIcePlatformId = null;
       
       // Improved air control system
       const airMaxSpeed = GAME_CONFIG.MAX_SPEED_X * GAME_CONFIG.AIR_MAX_SPEED_MULT;

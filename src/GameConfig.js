@@ -25,7 +25,7 @@ export const GAME_CONFIG = {
 
   // Ice platform sliding settings
   ICE_SLIDE_FORCE: 0.0001, // How strong the random sliding force is (as fraction of move speed) - reduced from 0.05
-  ICE_SLIDE_CHANCE: 0.05, // Chance per frame to start sliding (at 60fps)
+  ICE_SLIDE_CHANCE: 0.02, // Chance per frame to start sliding (at 60fps) - reduced from 0.05
   ICE_DIRECTION_CHANGE_CHANCE: 0.000, // Chance per frame to change slide direction - reduced from 0.005
 
   // World streaming
@@ -61,13 +61,20 @@ export const GAME_CONFIG = {
   CHECKPOINT_SIZE: 32,
 
   // Coin system
-  COIN_SPAWN_CHANCE: 0.7,
-  COIN_SIZE: 24,
+  COIN_SPAWN_CHANCE: 0.5,
+  COIN_SIZE: 36,
 
   // Health pack system
   HEALTH_PACK_SPAWN_CHANCE: 0.25, // Rarer than coins
-  HEALTH_PACK_SIZE: 24,
+  HEALTH_PACK_SIZE: 36,
   HEALTH_PACK_HEAL_AMOUNT: 25, // Heals 25 health points
+
+  // Boot system
+  BOOT_SPAWN_CHANCE: 0.05, 
+  BOOT_SPAWN_CHANCE_ON_ICE: 0.15, 
+  BOOT_SIZE: 36,
+  BOOT_SLIP_PREVENTION_USES: 10, // Number of times boots prevent slipping
+  BOOT_MAX_STACK: 15, // Maximum number of boot uses that can be stacked
 
   // Platform system
   PLATFORM_SIZES: [
@@ -155,5 +162,12 @@ export const COLORS = {
     DARK: "#006600", // Dark green shadow
     INACTIVE: "#444444", // Gray when inactive
     POLE: "#666666", // Flag pole color
+  },
+  BOOT: {
+    LEATHER: "#8B4513", // Brown leather
+    SOLE: "#2F2F2F", // Dark sole
+    LACES: "#654321", // Brown laces
+    HIGHLIGHT: "#CD853F", // Light brown highlight
+    BUCKLE: "#C0C0C0", // Silver buckle
   },
 };

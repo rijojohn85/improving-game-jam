@@ -155,11 +155,14 @@ export class SaveSystem {
   }
 
   displayLeaderboard(scene) {
-    // Clear any existing leaderboard UI
-    this.clearLeaderboard(scene);
+    try {
+      console.log('Displaying leaderboard...');
+      // Clear any existing leaderboard UI
+      this.clearLeaderboard(scene);
 
-    const centerX = scene.cameras.main.worldView.centerX;
-    const centerY = scene.cameras.main.worldView.centerY;
+      // Use game config dimensions instead of camera worldView
+      const centerX = 240; // GAME_CONFIG.WIDTH / 2
+      const centerY = 400; // GAME_CONFIG.HEIGHT / 2
 
     // Create semi-transparent background
     const background = scene.add.rectangle(
@@ -176,9 +179,9 @@ export class SaveSystem {
 
     // Title
     const title = scene.add.text(centerX, centerY - 220, 'LEADERBOARD', {
-      fontSize: '24px',
+      fontSize: '20px',
       fill: '#ffffff',
-      fontFamily: 'monospace',
+      fontFamily: '"Press Start 2P"',
       fontStyle: 'bold'
     });
     title.setOrigin(0.5);
@@ -200,9 +203,9 @@ export class SaveSystem {
         y, 
         `${rank}. ${this.formatScore(entry.score)} pts (${entry.height}m)`,
         {
-          fontSize: '16px',
+          fontSize: '12px',
           fill: rank <= 3 ? '#ffdd44' : '#ffffff',
-          fontFamily: 'monospace',
+          fontFamily: '"Press Start 2P"',
           fontStyle: rank <= 3 ? 'bold' : 'normal'
         }
       );
@@ -217,9 +220,9 @@ export class SaveSystem {
         y + 15,
         this.formatDate(entry.date),
         {
-          fontSize: '12px',
+          fontSize: '8px',
           fill: '#aaaaaa',
-          fontFamily: 'monospace'
+          fontFamily: '"Press Start 2P"'
         }
       );
       dateText.setOrigin(0.5);
@@ -237,9 +240,9 @@ export class SaveSystem {
       
       // Separator line
       separator = scene.add.text(centerX, rankY - 20, '───────────────', {
-        fontSize: '14px',
+        fontSize: '10px',
         fill: '#666666',
-        fontFamily: 'monospace'
+        fontFamily: '"Press Start 2P"'
       });
       separator.setOrigin(0.5);
       separator.setScrollFactor(0);
@@ -247,9 +250,9 @@ export class SaveSystem {
 
       // Current game text
       currentGameText = scene.add.text(centerX, rankY, 'YOUR GAME:', {
-        fontSize: '14px',
+        fontSize: '10px',
         fill: '#ffff88',
-        fontFamily: 'monospace',
+        fontFamily: '"Press Start 2P"',
         fontStyle: 'bold'
       });
       currentGameText.setOrigin(0.5);
@@ -262,9 +265,9 @@ export class SaveSystem {
         rankY + 25, 
         `Rank ${currentRank.rank} of ${currentRank.totalEntries}`,
         {
-          fontSize: '16px',
+          fontSize: '12px',
           fill: currentRank.rank <= 5 ? '#44ff44' : '#ffffff',
-          fontFamily: 'monospace',
+          fontFamily: '"Press Start 2P"',
           fontStyle: currentRank.rank <= 5 ? 'bold' : 'normal'
         }
       );
@@ -278,9 +281,9 @@ export class SaveSystem {
         rankY + 45,
         `${this.formatScore(currentRank.score)} pts (${currentRank.height}m)`,
         {
-          fontSize: '14px',
+          fontSize: '10px',
           fill: '#ffffff',
-          fontFamily: 'monospace'
+          fontFamily: '"Press Start 2P"'
         }
       );
       scoreInfoText.setOrigin(0.5);
@@ -290,9 +293,9 @@ export class SaveSystem {
 
     // Close button
     const closeButton = scene.add.text(centerX, centerY + 180, 'CONTINUE', {
-      fontSize: '18px',
+      fontSize: '14px',
       fill: '#44ff44',
-      fontFamily: 'monospace',
+      fontFamily: '"Press Start 2P"',
       backgroundColor: '#002200',
       padding: { x: 15, y: 8 }
     });
@@ -323,6 +326,11 @@ export class SaveSystem {
     if (currentGameText) this.leaderboardElements.push(currentGameText);
     if (rankText) this.leaderboardElements.push(rankText);
     if (scoreInfoText) this.leaderboardElements.push(scoreInfoText);
+    
+    console.log('Leaderboard displayed successfully');
+    } catch (error) {
+      console.error('Error displaying leaderboard:', error);
+    }
   }
 
   clearLeaderboard(scene) {

@@ -250,16 +250,49 @@ export class PixelArt {
   }
 
   static makePixelCoinTexture(scene) {
-    const { COIN } = COLORS;
     const { COIN_SIZE } = GAME_CONFIG;
 
+    // Create animated coin texture using the new sprites
     const key = "coin";
-    const size = COIN_SIZE;
     
     // Check if texture already exists
     if (scene.textures.exists(key)) {
       return;
     }
+
+    // Create animation frames from the new coin sprites
+    if (scene.textures.exists('coin1') && scene.textures.exists('coin2') && scene.textures.exists('coin3')) {
+      // Use coin1 as the base texture for static display, animation will be handled separately
+      const baseTexture = scene.textures.get('coin1');
+      scene.textures.addCanvas(key, baseTexture.source[0].source);
+      
+      // Create animation for coins if not already created
+      if (!scene.anims.exists('coin_spin')) {
+        scene.anims.create({
+          key: 'coin_spin',
+          frames: [
+            { key: 'coin1' },
+            { key: 'coin2' },
+            { key: 'coin3' },
+            { key: 'coin2' }
+          ],
+          frameRate: 8,
+          repeat: -1
+        });
+      }
+    } else {
+      console.warn('Coin sprites not loaded, falling back to generated texture');
+      // Fallback to original generated texture code if sprites aren't loaded
+      this.makeOriginalCoinTexture(scene);
+    }
+  }
+
+  static makeOriginalCoinTexture(scene) {
+    const { COIN } = COLORS;
+    const { COIN_SIZE } = GAME_CONFIG;
+
+    const key = "coin";
+    const size = COIN_SIZE;
     
     const canvas = scene.textures.createCanvas(key, size, size);
     if (!canvas) {
@@ -297,16 +330,49 @@ export class PixelArt {
   }
 
   static makePixelHealthPackTexture(scene) {
-    const { HEALTH_PACK } = COLORS;
     const { HEALTH_PACK_SIZE } = GAME_CONFIG;
 
+    // Create health pack texture using the new sprites
     const key = "healthpack";
-    const size = HEALTH_PACK_SIZE;
     
     // Check if texture already exists
     if (scene.textures.exists(key)) {
       return;
     }
+
+    // Create animation frames from the new health pack sprites
+    if (scene.textures.exists('medi1') && scene.textures.exists('medi2') && scene.textures.exists('medi3')) {
+      // Use medi1 as the base texture for static display
+      const baseTexture = scene.textures.get('medi1');
+      scene.textures.addCanvas(key, baseTexture.source[0].source);
+      
+      // Create animation for health packs if not already created
+      if (!scene.anims.exists('healthpack_pulse')) {
+        scene.anims.create({
+          key: 'healthpack_pulse',
+          frames: [
+            { key: 'medi1' },
+            { key: 'medi2' },
+            { key: 'medi3' },
+            { key: 'medi2' }
+          ],
+          frameRate: 6,
+          repeat: -1
+        });
+      }
+    } else {
+      console.warn('Health pack sprites not loaded, falling back to generated texture');
+      // Fallback to original generated texture code if sprites aren't loaded
+      this.makeOriginalHealthPackTexture(scene);
+    }
+  }
+
+  static makeOriginalHealthPackTexture(scene) {
+    const { HEALTH_PACK } = COLORS;
+    const { HEALTH_PACK_SIZE } = GAME_CONFIG;
+
+    const key = "healthpack";
+    const size = HEALTH_PACK_SIZE;
     
     const canvas = scene.textures.createCanvas(key, size, size);
     if (!canvas) {
@@ -407,6 +473,98 @@ export class PixelArt {
     canvas.refresh();
   }
 
+  static makePixelBootTexture(scene) {
+    const { BOOT_SIZE } = GAME_CONFIG;
+
+    // Create boot texture using the new sprites
+    const key = "boot";
+    
+    // Check if texture already exists
+    if (scene.textures.exists(key)) {
+      return;
+    }
+
+    // Create animation frames from the new boot sprites
+    if (scene.textures.exists('boot1') && scene.textures.exists('boot2') && scene.textures.exists('boot3') && scene.textures.exists('boot4')) {
+      // Use boot1 as the base texture for static display
+      const baseTexture = scene.textures.get('boot1');
+      scene.textures.addCanvas(key, baseTexture.source[0].source);
+      
+      // Create animation for boots if not already created
+      if (!scene.anims.exists('boot_shine')) {
+        scene.anims.create({
+          key: 'boot_shine',
+          frames: [
+            { key: 'boot1' },
+            { key: 'boot2' },
+            { key: 'boot3' },
+            { key: 'boot4' },
+            { key: 'boot3' },
+            { key: 'boot2' }
+          ],
+          frameRate: 5,
+          repeat: -1
+        });
+      }
+    } else {
+      console.warn('Boot sprites not loaded, falling back to generated texture');
+      // Fallback to original generated texture code if sprites aren't loaded
+      this.makeOriginalBootTexture(scene);
+    }
+  }
+
+  static makeOriginalBootTexture(scene) {
+    const { BOOT } = COLORS;
+    const { BOOT_SIZE } = GAME_CONFIG;
+
+    const key = "boot";
+    const size = BOOT_SIZE;
+    
+    const canvas = scene.textures.createCanvas(key, size, size);
+    if (!canvas) {
+      console.error(`Failed to create texture: ${key}`);
+      return;
+    }
+    
+    const c = canvas.context;
+
+    // Create a boot shape
+    const centerX = size / 2;
+    const centerY = size / 2;
+
+    // Main boot body (boot upper)
+    c.fillStyle = BOOT.LEATHER;
+    c.fillRect(4, 6, 16, 12);
+
+    // Boot sole (bottom part)
+    c.fillStyle = BOOT.SOLE;
+    c.fillRect(2, 16, 20, 4);
+
+    // Boot highlight (lighter leather on top)
+    c.fillStyle = BOOT.HIGHLIGHT;
+    c.fillRect(5, 7, 14, 3);
+
+    // Laces (small lines across the boot)
+    c.fillStyle = BOOT.LACES;
+    c.fillRect(6, 9, 12, 1);
+    c.fillRect(6, 11, 12, 1);
+    c.fillRect(6, 13, 12, 1);
+
+    // Small buckle detail
+    c.fillStyle = BOOT.BUCKLE;
+    c.fillRect(18, 8, 2, 2);
+    c.fillRect(18, 12, 2, 2);
+
+    // Sole grip lines
+    c.fillStyle = BOOT.HIGHLIGHT;
+    c.fillRect(4, 17, 2, 1);
+    c.fillRect(8, 17, 2, 1);
+    c.fillRect(12, 17, 2, 1);
+    c.fillRect(16, 17, 2, 1);
+
+    canvas.refresh();
+  }
+
   static preloadAllTextures(scene) {
     const { MOUNTAINS } = COLORS;
 
@@ -420,5 +578,6 @@ export class PixelArt {
     PixelArt.makePixelCoinTexture(scene);
     PixelArt.makePixelHealthPackTexture(scene);
     PixelArt.makePixelCheckpointTexture(scene);
+    PixelArt.makePixelBootTexture(scene);
   }
 }

@@ -103,7 +103,7 @@ export class WorldSystem {
     this.topX = top.x;
   }
 
-  spawnPlatformAbove(coinSystem = null, healthPackSystem = null) {
+  spawnPlatformAbove(coinSystem = null, healthPackSystem = null, bootSystem = null) {
 
     const gap = Phaser.Math.Between(GAME_CONFIG.GAP_MIN, GAME_CONFIG.GAP_MAX);
     const reach = this.maxHorizontalReachForGap(gap);
@@ -161,6 +161,7 @@ export class WorldSystem {
     const platform = this.platforms.create(nx, ny, platformKey);
     platform.platformWidth = platformSize.width;
     platform.platformType = platformType;
+    platform.bootModified = false; // Initialize boot modification flag
 
     // Assign platform properties
     if (platformType === "stone") {
@@ -202,6 +203,35 @@ export class WorldSystem {
         gap,
         reach
       );
+    }
+
+    // Chance to spawn a boot in a safe position (higher chance on ice platforms and in ice phase)
+    if (bootSystem) {
+      // Use higher spawn chance for ice platforms, even higher in the ice-heavy phase
+      let bootSpawnChance = GAME_CONFIG.BOOT_SPAWN_CHANCE;
+      if (platformType === "ice") {
+        bootSpawnChance = GAME_CONFIG.BOOT_SPAWN_CHANCE_ON_ICE;
+        // In the ice-heavy phase (>3000px), make boots even more common
+        if (heightClimbed >= 3000) {
+          bootSpawnChance = Math.min(0.7, GAME_CONFIG.BOOT_SPAWN_CHANCE_ON_ICE * 1.5); // Up to 67.5% chance in ice phase
+        }
+      }
+      
+      if (Math.random() < bootSpawnChance) {
+        console.log(
+          `Spawning boot at height ${Math.floor(
+            (GAME_CONFIG.BASE_Y - ny) / 100
+          )} meters on ${platformType} platform (${(bootSpawnChance * 100).toFixed(1)}% chance)`
+        );
+        bootSystem.spawnBoot(
+          this.topX,
+          this.minY,
+          nx,
+          ny,
+          gap,
+          reach
+        );
+      }
     }
 
     this.minY = ny;
@@ -343,13 +373,14 @@ export class WorldSystem {
     player,
     coinSystem = null,
     healthPackSystem = null,
-    checkpointSystem = null
+    checkpointSystem = null,
+    bootSystem = null
   ) {
     const camTop = camera.scrollY;
 
     // Spawn new platforms ahead
     while (this.minY > camTop - GAME_CONFIG.SPAWN_AHEAD) {
-      this.spawnPlatformAbove(coinSystem, healthPackSystem);
+      this.spawnPlatformAbove(coinSystem, healthPackSystem, bootSystem);
     }
 
     // Recycle old platforms
@@ -379,6 +410,17 @@ export class WorldSystem {
         );
         const ny = this.minY - gap;
         p.setPosition(nx, ny);
+        
+        // Reset any boot modifications when recycling platform
+        if (p.bootModified) {
+          // Restore original ice properties if it was an ice platform
+          if (p.platformType === "ice") {
+            p.friction = 0.5; // Original ice friction
+            p.damageMultiplier = 1.0; // Original ice damage multiplier
+          }
+          p.bootModified = false;
+        }
+        
         p.refreshBody();
         this.minY = ny;
         this.topX = nx;

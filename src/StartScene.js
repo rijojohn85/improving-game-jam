@@ -133,6 +133,7 @@ export class StartScene extends Phaser.Scene {
       "• FIND HEALTH PACKS TO HEAL",
       "• REACH CHECKPOINTS TO SAVE PROGRESS",
       "• BEWARE OF ICE PLATFORMS - THEY'RE SLIPPERY!",
+      "• COLLECT BOOTS TO PREVENT ICE SLIPPING",
     ];
 
     rules.forEach((rule, index) => {

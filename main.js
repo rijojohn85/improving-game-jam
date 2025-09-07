@@ -1,4 +1,4 @@
-const { app, BrowserWindow } = require("electron");
+const { app, BrowserWindow, ipcMain } = require("electron");
 const path = require("path");
 
 function createWindow() {
@@ -8,9 +8,13 @@ function createWindow() {
     backgroundColor: "#0d0f1a",
     resizable: false,
     webPreferences: {
-      contextIsolation: true,
-      nodeIntegration: false, // no Node in renderer
+      contextIsolation: false, // Allow require in renderer
+      nodeIntegration: true, // Enable Node.js in renderer
       sandbox: false, // keep this simple for Phaser
+      // Enable hardware acceleration for high refresh rates
+      hardwareAcceleration: true,
+      // Disable VSync to allow uncapped frame rates
+      disableVSync: true,
     },
   });
 
@@ -24,4 +28,9 @@ function createWindow() {
 app.whenReady().then(createWindow);
 app.on("window-all-closed", () => {
   if (process.platform !== "darwin") app.quit();
+});
+
+// Handle quit-app message from renderer
+ipcMain.on("quit-app", () => {
+  app.quit();
 });

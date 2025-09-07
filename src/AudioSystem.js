@@ -27,6 +27,41 @@ export class AudioSystem {
     this.sfxGain.connect(this.masterGain);
   }
 
+  // Load audio file
+  async loadAudio(name, url) {
+    this.ensureAudioContext();
+    try {
+      const response = await fetch(url);
+      const arrayBuffer = await response.arrayBuffer();
+      const audioBuffer = await this.AC.decodeAudioData(arrayBuffer);
+      this.audioBuffers.set(name, audioBuffer);
+    } catch (error) {
+      console.error(`Failed to load audio: ${name}`, error);
+    }
+  }
+
+  // Play loaded audio file
+  playAudio(name, volume = 1, loop = false, gainNode = this.sfxGain) {
+    const buffer = this.audioBuffers.get(name);
+    if (!buffer) {
+      console.warn(`Audio not found: ${name}`);
+      return;
+    }
+
+    const source = this.AC.createBufferSource();
+    const gain = this.AC.createGain();
+
+    source.buffer = buffer;
+    source.loop = loop;
+    gain.gain.value = volume;
+
+    source.connect(gain);
+    gain.connect(gainNode);
+    source.start();
+
+    return source; // Return for stopping if needed
+  }
+
   hookAudioResume() {
     const resume = () => {
       this.ensureAudioContext();
@@ -181,5 +216,13 @@ export class AudioSystem {
     this.sfxTone(400, 0.3, "sine", 0.7);
     this.sfxTone(600, 0.25, "sine", 0.5);
     this.sfxTone(800, 0.2, "sine", 0.3);
+  }
+
+  sfxCheckpointSave() {
+    // Save sound - triumphant chord progression
+    this.sfxTone(523, 0.15, "triangle", 0.6); // C
+    this.sfxTone(659, 0.15, "triangle", 0.5); // E
+    this.sfxTone(784, 0.2, "triangle", 0.4); // G
+    this.sfxTone(1047, 0.25, "sine", 0.3); // High C
   }
 }

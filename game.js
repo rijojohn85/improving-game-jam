@@ -42,6 +42,8 @@ import { HealthPackSystem } from "./src/HealthPackSystem.js";
   // Game state variables
   let scene;
   let mtnFar, mtnMid, mtnNear, skyImg;
+  let debugText;
+  let debugVisible = false;
 
   // Start the game
   new Phaser.Game(config);
@@ -74,6 +76,11 @@ import { HealthPackSystem } from "./src/HealthPackSystem.js";
 
     // Initialize all game systems
     worldSystem.initialize(scene);
+    
+    // Attach systems to scene for easy access
+    scene.worldSystem = worldSystem;
+    scene.scoringSystem = scoringSystem;
+    
     const playerSprite = player.initialize(
       scene,
       W / 2,
@@ -109,6 +116,17 @@ import { HealthPackSystem } from "./src/HealthPackSystem.js";
     scoringSystem.initialize();
     audioSystem.hookAudioResume();
     audioSystem.setupAudioUI();
+
+    // Setup debug toggle
+    setupDebugToggle();
+
+    // Debug text for velocity
+    debugText = scene.add.text(10, 10, '', {
+      font: '16px monospace',
+      fill: '#fff',
+      backgroundColor: 'rgba(0,0,0,0.5)',
+      padding: { x: 6, y: 2 },
+    }).setScrollFactor(0, 0).setDepth(1000).setVisible(debugVisible);
   }
 
   // Setup parallax background
@@ -135,11 +153,60 @@ import { HealthPackSystem } from "./src/HealthPackSystem.js";
     mtnNear.setAlpha(1).setDepth(-10);
   }
 
+  // Setup debug toggle functionality
+  function setupDebugToggle() {
+    scene.input.keyboard.on('keydown-D', () => {
+      debugVisible = !debugVisible;
+      if (debugText) {
+        debugText.setVisible(debugVisible);
+      }
+    });
+  }
+
   // Main update loop - coordinates all systems
   function update() {
     // Update player and get state
     const playerState = player.update(audioSystem);
     const playerPos = playerState.position;
+
+    // Update debug text with velocity, platform friction, and damage info
+    if (debugText && debugVisible && player.getSprite()) {
+      const vx = player.getSprite().body.velocity.x.toFixed(1);
+      const vy = player.getSprite().body.velocity.y.toFixed(1);
+      
+      // Get current platform info using scoring system helper
+      const platformInfo = scoringSystem.getCurrentPlatform(player, scene);
+      
+      // Calculate friction effects and max speed
+      let speedScale = 1.0;
+      let maxSpeedMult = 1.0;
+      if (platformInfo.friction < 0.7) {
+        speedScale = 2.5 + (0.7 - platformInfo.friction) * 3.0;
+        maxSpeedMult = speedScale * 0.8;
+      } else if (platformInfo.friction > 1.2) {
+        speedScale = Math.max(0.3, 1.5 - platformInfo.friction);
+        maxSpeedMult = Math.max(0.2, 0.8 - (platformInfo.friction - 1.0));
+      } else {
+        speedScale = Math.max(0.5, 1.2 - platformInfo.friction * 0.4);
+        maxSpeedMult = Math.max(0.4, 0.9 - platformInfo.friction * 0.3);
+      }
+      
+      // Check if player is sliding on ice
+      const isSliding = player._iceSlideTimer > 0 && platformInfo.friction < 0.7;
+      const slideInfo = isSliding ? `\nICE SLIDE: ${player._iceSlideTimer.toFixed(0)}f dir:${player._iceSlideDirection}` : "";
+      
+      // Get damage debug info from scoring system
+      const dmgInfo = scoringSystem.getDamageDebugInfo();
+
+      debugText.setText(
+        `vx: ${vx}\nvy: ${vy}` +
+        `\nfriction: ${platformInfo.friction.toFixed(2)} (${platformInfo.platformType})` +
+        `\nspeed: ${speedScale.toFixed(2)}x max: ${maxSpeedMult.toFixed(2)}x` +
+        `\nmax speed: ${(GAME_CONFIG.MAX_SPEED_X * maxSpeedMult).toFixed(1)}px/s` +
+        slideInfo +
+        (dmgInfo ? `\n${dmgInfo}` : "")
+      );
+    }
 
     // Handle parallax scrolling
     updateParallax();
@@ -183,11 +250,11 @@ import { HealthPackSystem } from "./src/HealthPackSystem.js";
       scoringSystem.startFall(playerState.position.y);
     }
 
-    if (playerState.grounded && scoringSystem.falling) {
-      const result = scoringSystem.endFall(
+    if (playerState.grounded && scoringSystem.falling) {      const result = scoringSystem.endFall(
         playerState.position.y,
         audioSystem,
-        scene
+        scene,
+        player
       );
       if (result.isDead) {
         scoringSystem.gameOver(scene);

@@ -80,20 +80,39 @@ export class ScoringSystem {
     if (this.heightText) this.heightText.textContent = String(this.bestHeight);
   }
 
-  applyFallDamage(dropPx, audioSystem, scene) {
+  applyFallDamage(dropPx, audioSystem, scene, player = null) {
     const excess = Math.max(0, dropPx - GAME_CONFIG.SAFE_DROP_PX);
-    const dmg = Math.round((excess / 50) * GAME_CONFIG.DMG_PER_50PX);
+    let baseDmg = (excess / 50) * GAME_CONFIG.DMG_PER_50PX;
+    
+    // Get platform type and damage multiplier using helper function
+    const platformInfo = this.getCurrentPlatform(player, scene);
+    const dmgMultiplier = platformInfo.damageMultiplier;
+    const platformType = platformInfo.platformType;
+    const friction = platformInfo.friction;
+
+    const finalDmg = Math.round(baseDmg * dmgMultiplier);
+
+    // Store debug info for display
+    this.lastDamageDebug = {
+      drop: dropPx,
+      excess: excess,
+      baseDmg: baseDmg,
+      dmgMultiplier: dmgMultiplier,
+      finalDmg: finalDmg,
+      platformType: platformType,
+      friction: friction
+    };
 
     if (audioSystem) {
-      audioSystem.sfxLand(dropPx, dmg, GAME_CONFIG.SAFE_DROP_PX);
+      audioSystem.sfxLand(dropPx, finalDmg, GAME_CONFIG.SAFE_DROP_PX);
     }
 
-    if (dmg > 0) {
+    if (finalDmg > 0) {
       if (scene) {
         scene.cameras.main.flash(120, 255, 64, 64);
       }
-      const isDead = this.setHealth(this.health - dmg);
-      return { damage: dmg, isDead };
+      const isDead = this.setHealth(this.health - finalDmg);
+      return { damage: finalDmg, isDead };
     }
 
     return { damage: 0, isDead: false };
@@ -145,10 +164,10 @@ export class ScoringSystem {
     }
   }
 
-  endFall(playerY, audioSystem, scene) {
+  endFall(playerY, audioSystem, scene, player = null) {
     if (this.falling) {
       const drop = Math.max(0, playerY - this.fallStartY);
-      const result = this.applyFallDamage(drop, audioSystem, scene);
+      const result = this.applyFallDamage(drop, audioSystem, scene, player);
       this.falling = false;
       return result;
     }
@@ -163,5 +182,62 @@ export class ScoringSystem {
         scene.scene.restart();
       });
     }
+  }
+
+  getDamageDebugInfo() {
+    if (!this.lastDamageDebug) return "";
+    
+    const d = this.lastDamageDebug;
+    return `drop: ${d.drop.toFixed(1)}px excess: ${d.excess.toFixed(1)}px` +
+           `\ndmg: (${d.excess.toFixed(1)}/50)*${GAME_CONFIG.DMG_PER_50PX}*${d.dmgMultiplier.toFixed(1)} = ${d.finalDmg}` +
+           `\nplatform: ${d.platformType} friction: ${d.friction.toFixed(2)}`;
+  }
+
+  // Helper function to detect current platform under player
+  getCurrentPlatform(player, scene) {
+    if (!player || !scene || !scene.worldSystem || !scene.worldSystem.platforms) {
+      return { platformType: "unknown", friction: 1.0, damageMultiplier: 1.0 };
+    }
+
+    const playerSprite = player.getSprite();
+    if (!playerSprite) {
+      return { platformType: "unknown", friction: 1.0, damageMultiplier: 1.0 };
+    }
+
+    const px = playerSprite.x;
+    // Use the center bottom of the player's physics body
+    const py = playerSprite.y + playerSprite.body.height / 2 + playerSprite.body.height / 2;
+
+    // Find the platform the player is standing on or very close to
+    let closestPlatform = null;
+    let minDistance = Infinity;
+
+    for (let p of scene.worldSystem.platforms.getChildren()) {
+      if (!p.active) continue;
+
+      // Check if player is horizontally within platform bounds (with some tolerance)
+      const platformWidth = p.platformWidth || 120;
+      const platformLeft = p.x - platformWidth / 2 - 5; // Add 5px tolerance
+      const platformRight = p.x + platformWidth / 2 + 5; // Add 5px tolerance
+      
+      if (px >= platformLeft && px <= platformRight) {
+        // Check vertical distance (player should be above or very close to platform top)
+        const distance = Math.abs(p.y - py);
+        if (distance < minDistance && distance < 20) { // Within 20 pixels vertically
+          minDistance = distance;
+          closestPlatform = p;
+        }
+      }
+    }
+
+    if (closestPlatform) {
+      return {
+        platformType: closestPlatform.platformType || "dirt",
+        friction: closestPlatform.friction !== undefined ? closestPlatform.friction : 1.0,
+        damageMultiplier: closestPlatform.damageMultiplier !== undefined ? closestPlatform.damageMultiplier : 1.0
+      };
+    }
+
+    return { platformType: "unknown", friction: 1.0, damageMultiplier: 1.0 };
   }
 }

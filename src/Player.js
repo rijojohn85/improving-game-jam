@@ -8,6 +8,13 @@ export class Player {
     this.cursors = null;
     this.keysAD = null;
     this.spaceKey = null;
+    this._wasGrounded = false;
+    this._lastAirVX = 0;
+    this._lockedAirVX = 0;
+    this._lastPlatformX = null;
+    this._lastPlatformY = null;
+    this._iceSlideTimer = 0;
+    this._iceSlideDirection = 0;
   }
 
   initialize(scene, startX, startY) {
@@ -40,19 +47,243 @@ export class Player {
     const rightPressed = this.cursors.right.isDown || this.keysAD.right.isDown;
     const grounded = this.sprite.body.blocked.down;
 
-    // Drag swaps for air/ground
-    this.sprite.setDragX(
-      grounded ? GAME_CONFIG.GROUND_DRAG_X : GAME_CONFIG.AIR_DRAG_X
-    );
-
-    // Ground movement
-    if (leftPressed) {
-      this.sprite.setVelocityX(-GAME_CONFIG.MOVE_SPEED);
-    } else if (rightPressed) {
-      this.sprite.setVelocityX(GAME_CONFIG.MOVE_SPEED);
-    } else if (grounded) {
-      this.sprite.setVelocityX(0);
+    // Track last air horizontal velocity
+    if (!grounded) {
+      this._lastAirVX = this.sprite.body.velocity.x;
     }
+
+
+    // Custom friction and speed scaling: if grounded, check platform under player
+    let friction = 1.0;
+    let speedScale = 1.0;
+    let onLowFriction = false;
+    let currentPlatform = null;
+    
+    if (grounded) {
+      const scene = this.sprite.scene;
+      // Use the same platform detection method as ScoringSystem
+      if (scene && scene.scoringSystem) {
+        const platformInfo = scene.scoringSystem.getCurrentPlatform(this, scene);
+        friction = platformInfo.friction;
+        currentPlatform = platformInfo.platform;
+        
+        // Apply friction-based speed and max speed scaling for all platform types
+        if (friction < 0.7) {
+          // Ice platforms: slippery, moderate speed increase, harder to control
+          speedScale = 1.6 + (0.7 - friction) * 1.2; // Reduced from 1.8 + 1.5 multiplier
+          onLowFriction = true;
+        } else if (friction > 1.2) {
+          // Dirt platforms: high friction, significantly reduced speed for realism
+          speedScale = Math.max(0.3, 1.5 - friction); // Much slower on high friction (0.3x at friction 1.2, even slower at higher friction)
+        } else {
+          // Stone platforms: medium friction, moderately reduced speed
+          speedScale = Math.max(0.5, 1.2 - friction * 0.4); // Moderate reduction based on friction
+        }
+        
+        // Debug logging
+        if (Math.random() < 0.01) { // Log occasionally to avoid spam
+          console.log(`Platform detected: friction=${friction.toFixed(2)}, speedScale=${speedScale.toFixed(2)}, type=${platformInfo.platformType || 'unknown'}`);
+        }
+      }
+      // Apply more aggressive drag on high friction platforms
+      if (friction > 1.2) {
+        this.sprite.setDragX(GAME_CONFIG.GROUND_DRAG_X * friction * 2.0); // Double the drag effect for high friction
+      } else if (friction < 0.7) {
+        // Ice platforms: much lower drag to allow sliding
+        this.sprite.setDragX(GAME_CONFIG.GROUND_DRAG_X * friction * 0.1); // Reduce drag significantly for ice
+      } else {
+        this.sprite.setDragX(GAME_CONFIG.GROUND_DRAG_X * friction);
+      }
+    } else {
+      this.sprite.setDragX(GAME_CONFIG.AIR_DRAG_X * 0.5); // Reduce air drag for better control
+    }
+
+    // Ground movement with friction-based speed scaling
+    const baseSpeed = GAME_CONFIG.MOVE_SPEED * 0.8; // Base speed multiplier
+    const moveSpeed = baseSpeed * speedScale; // Apply friction-based scaling
+    
+    // Debug logging for speed calculation
+    if (grounded && (leftPressed || rightPressed) && Math.random() < 0.05) {
+      console.log(`Speed calc: baseSpeed=${baseSpeed.toFixed(1)}, speedScale=${speedScale.toFixed(2)}, moveSpeed=${moveSpeed.toFixed(1)}, friction=${friction.toFixed(2)}`);
+    }
+    
+    // Max speed is significantly affected by friction
+    let maxSpeedMultiplier;
+    if (friction < 0.7) {
+      // Ice: much higher max speed
+      maxSpeedMultiplier = speedScale * 0.8; 
+    } else if (friction > 1.2) {
+      // Dirt: dramatically reduced max speed - high friction makes you very slow
+      maxSpeedMultiplier = Math.max(0.2, 0.8 - (friction - 1.0)); // Very low max speed on high friction
+    } else {
+      // Stone: moderate max speed reduction
+      maxSpeedMultiplier = Math.max(0.4, 0.9 - friction * 0.3);
+    }
+    
+    const maxSpeedX = GAME_CONFIG.MAX_SPEED_X * maxSpeedMultiplier;
+    this.sprite.setMaxVelocity(maxSpeedX, 2500);
+
+    // Immediately clamp current velocity to the new max speed if grounded
+    if (grounded) {
+      const currentVX = this.sprite.body.velocity.x;
+      if (Math.abs(currentVX) > maxSpeedX) {
+        this.sprite.setVelocityX(Math.sign(currentVX) * maxSpeedX);
+      }
+    }
+
+    if (grounded) {
+      if (leftPressed || rightPressed) {
+        // Reset ice sliding when player provides input
+        this._iceSlideTimer = 0;
+        
+        if (leftPressed) {
+          const clampedSpeed = Math.min(moveSpeed, maxSpeedX);
+          this.sprite.setVelocityX(-clampedSpeed);
+          this._lockedAirVX = -clampedSpeed * 0.8; // Reduce initial air velocity for better control
+          
+          // Debug: log actual velocity being set
+          if (Math.random() < 0.05) {
+            console.log(`Setting LEFT velocity: ${-clampedSpeed.toFixed(1)} (moveSpeed=${moveSpeed.toFixed(1)}, maxSpeedX=${maxSpeedX.toFixed(1)})`);
+          }
+        } else if (rightPressed) {
+          const clampedSpeed = Math.min(moveSpeed, maxSpeedX);
+          this.sprite.setVelocityX(clampedSpeed);
+          this._lockedAirVX = clampedSpeed * 0.8; // Reduce initial air velocity for better control
+          
+          // Debug: log actual velocity being set  
+          if (Math.random() < 0.05) {
+            console.log(`Setting RIGHT velocity: ${clampedSpeed.toFixed(1)} (moveSpeed=${moveSpeed.toFixed(1)}, maxSpeedX=${maxSpeedX.toFixed(1)})`);
+          }
+        }
+      } else if (onLowFriction) {
+        if (!this._wasGrounded) {
+          // Just landed on ice: slide in direction from previous platform
+          let slideSpeed = Math.min(moveSpeed * 0.8, maxSpeedX); // Respect max speed
+          let dir = 0;
+          if (this._lastPlatformX !== null && currentPlatform) {
+            dir = Math.sign(currentPlatform.x - this._lastPlatformX);
+            if (dir === 0) dir = 1; // Default to right if perfectly vertical
+          } else {
+            dir = Math.sign(this._lastAirVX) || 1;
+          }
+          this.sprite.setVelocityX(slideSpeed * dir);
+          this._lockedAirVX = slideSpeed * dir;
+          
+          // Start random sliding timer
+          this._iceSlideTimer = Math.random() * 180 + 60; // 1-4 seconds at 60fps
+          this._iceSlideDirection = Math.random() < 0.5 ? -1 : 1;
+        }
+        
+        // Random sliding behavior on ice when no input
+        if (this._iceSlideTimer > 0) {
+          this._iceSlideTimer--;
+          const slideForce = (moveSpeed * GAME_CONFIG.ICE_SLIDE_FORCE) * this._iceSlideDirection;
+          let currentVX = this.sprite.body.velocity.x;
+          
+          // Debug logging for slide force
+          if (Math.random() < 0.02) {
+            console.log(`Applying ice slide: force=${slideForce.toFixed(2)}, currentVX=${currentVX.toFixed(2)}, timer=${this._iceSlideTimer}`);
+          }
+          
+          currentVX += slideForce;
+          // Clamp to max speed
+          currentVX = Phaser.Math.Clamp(currentVX, -maxSpeedX, maxSpeedX);
+          this.sprite.setVelocityX(currentVX);
+          
+          // Occasionally change slide direction
+          if (Math.random() < GAME_CONFIG.ICE_DIRECTION_CHANGE_CHANCE) {
+            this._iceSlideDirection *= -1;
+            this._iceSlideTimer = Math.random() * 120 + 30; // Reset timer
+          }
+        } else {
+          // Start new random slide period only if player is not moving horizontally
+          const currentVX = this.sprite.body.velocity.x;
+          const isNearlyStationary = Math.abs(currentVX) < moveSpeed * 0.3; // Increased threshold from 0.2 to 0.3
+          
+          // Debug logging
+          if (Math.random() < 0.1) { // Log occasionally
+            console.log(`Ice check: currentVX=${currentVX.toFixed(2)}, threshold=${(moveSpeed * 0.3).toFixed(2)}, stationary=${isNearlyStationary}, slideChance=${GAME_CONFIG.ICE_SLIDE_CHANCE}`);
+          }
+          
+          if (isNearlyStationary && Math.random() < GAME_CONFIG.ICE_SLIDE_CHANCE) {
+            this._iceSlideTimer = Math.random() * 120 + 60;
+            this._iceSlideDirection = Math.random() < 0.5 ? -1 : 1;
+            console.log(`Starting ice slide! Timer=${this._iceSlideTimer}, direction=${this._iceSlideDirection}`);
+          }
+        }
+        
+        // On ice platforms, maintain more momentum and slide more
+        const currentVX = this.sprite.body.velocity.x;
+        if (Math.abs(currentVX) > moveSpeed * 0.1) {
+          // Reduce velocity more quickly on ice to prevent excessive sliding
+          let newVX = currentVX * 0.15; // Increased decay from 0.99 to 0.95 (5% per frame instead of 1%)
+          newVX = Phaser.Math.Clamp(newVX, -maxSpeedX, maxSpeedX);
+          this.sprite.setVelocityX(newVX);
+        }
+      } else if (friction > 1.0) {
+        // Reset ice sliding when not on ice
+        this._iceSlideTimer = 0;
+        // High friction platforms (dirt): stop very quickly when no input
+        const currentVX = this.sprite.body.velocity.x;
+        // More aggressive stopping on higher friction
+        const stopFactor = Math.min(0.7, friction - 0.8); // Higher friction = more aggressive stopping
+        this.sprite.setVelocityX(currentVX * stopFactor);
+        this._lockedAirVX = 0;
+      } else {
+        // Reset ice sliding when not on ice
+        this._iceSlideTimer = 0;
+      }
+      // Track last platform position for next jump
+      if (currentPlatform) {
+        this._lastPlatformX = currentPlatform.x;
+        this._lastPlatformY = currentPlatform.y;
+      }
+      
+      // Final velocity clamp to ensure we never exceed max speed on ground
+      const finalVX = this.sprite.body.velocity.x;
+      if (Math.abs(finalVX) > maxSpeedX) {
+        this.sprite.setVelocityX(Math.sign(finalVX) * maxSpeedX);
+      }
+    } else {
+      // Reset ice sliding when airborne
+      this._iceSlideTimer = 0;
+      
+      // Improved air control system
+      const airMaxSpeed = GAME_CONFIG.MAX_SPEED_X * GAME_CONFIG.AIR_MAX_SPEED_MULT;
+      let currentVX = this.sprite.body.velocity.x;
+      const deltaTime = this.sprite.scene.game.loop.delta / 1000; // Convert to seconds
+      
+      if (leftPressed) {
+        // If moving right but pressing left, apply extra deceleration for quick direction change
+        if (currentVX > 0) {
+          currentVX *= 0.85; // Quick direction change
+        }
+        // Apply leftward acceleration
+        currentVX -= GAME_CONFIG.AIR_ACCELERATION * deltaTime;
+        currentVX = Math.max(currentVX, -airMaxSpeed);
+      } else if (rightPressed) {
+        // If moving left but pressing right, apply extra deceleration for quick direction change
+        if (currentVX < 0) {
+          currentVX *= 0.85; // Quick direction change
+        }
+        // Apply rightward acceleration
+        currentVX += GAME_CONFIG.AIR_ACCELERATION * deltaTime;
+        currentVX = Math.min(currentVX, airMaxSpeed);
+      } else {
+        // Apply air deceleration when no keys are pressed
+        currentVX *= Math.pow(GAME_CONFIG.AIR_DECELERATION, deltaTime * 60); // Frame-rate independent decay
+        // Stop very small velocities to prevent infinite drift
+        if (Math.abs(currentVX) < 5) {
+          currentVX = 0;
+        }
+      }
+      
+      this.sprite.setVelocityX(currentVX);
+      this._lockedAirVX = currentVX; // Keep for landing momentum
+    }
+
+  // Track grounded state for next frame
+  this._wasGrounded = grounded;
 
     // Jump with run-up trade-off
     const jumpPressed =
@@ -65,22 +296,24 @@ export class Player {
         0,
         1
       );
-      const vyMag =
-        GAME_CONFIG.BASE_JUMP_V *
-        (1 - GAME_CONFIG.HEIGHT_REDUCTION_FRAC * runFrac);
+  // Run-up increases jump height, but even less dramatically
+  const vyMag = GAME_CONFIG.BASE_JUMP_V * (1 + 0.12 * GAME_CONFIG.HEIGHT_REDUCTION_FRAC * runFrac);
       this.sprite.setVelocityY(-vyMag);
 
       const dir = Math.sign(
         vxBefore || (rightPressed ? 1 : leftPressed ? -1 : 0)
       );
       if (dir !== 0) {
-        const impulse = GAME_CONFIG.SIDE_IMPULSE_MAX * runFrac * dir;
+        const impulse = GAME_CONFIG.SIDE_IMPULSE_MAX * runFrac * dir * 1.2; // Increase jump impulse
         const newVx = Phaser.Math.Clamp(
           vxBefore + impulse,
-          -GAME_CONFIG.MAX_SPEED_X,
-          GAME_CONFIG.MAX_SPEED_X
+          -GAME_CONFIG.MAX_SPEED_X * 1.1, // Allow slightly higher speed from jump
+          GAME_CONFIG.MAX_SPEED_X * 1.1
         );
         this.sprite.setVelocityX(newVx);
+        this._lockedAirVX = newVx * 0.9; // Set initial air velocity
+      } else {
+        this._lockedAirVX = vxBefore * 0.7; // Preserve some momentum even with no direction
       }
 
       if (audioSystem) {

@@ -11,6 +11,8 @@ import { Player } from "./src/Player.js";
 import { DebrisSystem } from "./src/DebrisSystem.js";
 import { CoinSystem } from "./src/CoinSystem.js";
 import { HealthPackSystem } from "./src/HealthPackSystem.js";
+import { CheckpointSystem } from "./src/CheckpointSystem.js";
+import { SaveSystem } from "./src/SaveSystem.js";
 
 (() => {
   const { WIDTH: W, HEIGHT: H } = GAME_CONFIG;
@@ -23,6 +25,7 @@ import { HealthPackSystem } from "./src/HealthPackSystem.js";
   const debrisSystem = new DebrisSystem();
   const coinSystem = new CoinSystem();
   const healthPackSystem = new HealthPackSystem();
+  const checkpointSystem = new CheckpointSystem();
 
   // Game configuration
   const config = {
@@ -57,6 +60,32 @@ import { HealthPackSystem } from "./src/HealthPackSystem.js";
   function create() {
     scene = this;
     scene.cameras.main.roundPixels = true;
+
+    // Add game data and reset function to scene for restart functionality
+    scene.gameData = {
+      resetAllSystems: () => {
+        console.log("Resetting all game systems...");
+        worldSystem.reset();
+        debrisSystem.reset();
+        coinSystem.reset();
+        healthPackSystem.reset();
+        checkpointSystem.reset();
+        scoringSystem.resetGame();
+
+        // Reset player position
+        const playerSprite = player.getSprite();
+        if (playerSprite) {
+          playerSprite.setPosition(
+            GAME_CONFIG.WIDTH / 2,
+            GAME_CONFIG.BASE_Y - 60
+          );
+          playerSprite.setVelocity(0, -480); // Initial upward velocity
+        }
+
+        // Reset camera
+        scene.cameras.main.setScroll(0, 0);
+      },
+    };
 
     // Setup parallax background
     setupBackground();
@@ -95,6 +124,7 @@ import { HealthPackSystem } from "./src/HealthPackSystem.js";
     debrisSystem.initialize(scene);
     coinSystem.initialize(scene);
     healthPackSystem.initialize(scene);
+    checkpointSystem.initialize(scene);
 
     // Setup all collision interactions
     debrisSystem.setupCollisions(
@@ -106,6 +136,7 @@ import { HealthPackSystem } from "./src/HealthPackSystem.js";
     );
     coinSystem.setupCollisions(player, scoringSystem, audioSystem, scene);
     healthPackSystem.setupCollisions(player, scoringSystem, audioSystem, scene);
+    checkpointSystem.setupCollisions(player, scoringSystem, audioSystem, scene);
 
     // Setup camera
     const cam = this.cameras.main;
@@ -219,15 +250,49 @@ import { HealthPackSystem } from "./src/HealthPackSystem.js";
       this.cameras.main,
       playerState,
       coinSystem,
-      healthPackSystem
+      healthPackSystem,
+      checkpointSystem
     );
     debrisSystem.update(this);
     coinSystem.update(this);
     healthPackSystem.update(this);
+    checkpointSystem.update(this);
 
     // Update scoring and UI
     scoringSystem.checkHeightProgress(playerPos.y);
     scoringSystem.updateHeightDisplay(playerPos.y);
+
+    // Check for checkpoint spawning
+    const currentHeightMeters = Math.max(
+      0,
+      Math.floor((-playerPos.y + GAME_CONFIG.BASE_Y) / 10)
+    );
+    if (checkpointSystem.shouldSpawnCheckpoint(currentHeightMeters)) {
+      // Find a suitable platform to place the checkpoint
+      const targetY = playerPos.y - 200; // Look for platforms above player
+      let bestPlatform = null;
+      let closestDistance = Infinity;
+
+      worldSystem.platforms.children.iterate((platform) => {
+        if (platform && platform.active) {
+          const distance = Math.abs(platform.y - targetY);
+          if (distance < closestDistance && platform.y < playerPos.y - 50) {
+            closestDistance = distance;
+            bestPlatform = platform;
+          }
+        }
+      });
+
+      if (bestPlatform) {
+        const checkpointX = bestPlatform.x;
+        const checkpointY = bestPlatform.y - 30; // Place on top of platform
+        checkpointSystem.spawnCheckpoint(
+          checkpointX,
+          checkpointY,
+          currentHeightMeters
+        );
+      }
+    }
   }
 
   // Update parallax background

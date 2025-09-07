@@ -20,6 +20,7 @@ export class Player {
   initialize(scene, startX, startY) {
     // Create player sprite
     this.sprite = scene.physics.add.sprite(startX, startY, "player_px_32x48");
+    this.sprite.name = "player"; // Add name for easy finding
 
     // Physics body sized so bottom of body == bottom of sprite (no visual gap)
     this.sprite.body.setSize(28, 46).setOffset(2, 2); // 2 + 46 = 48 -> bottoms align
@@ -155,83 +156,99 @@ export class Player {
             console.log(`Setting RIGHT velocity: ${clampedSpeed.toFixed(1)} (moveSpeed=${moveSpeed.toFixed(1)}, maxSpeedX=${maxSpeedX.toFixed(1)})`);
           }
         }
-      } else if (onLowFriction) {
-        if (!this._wasGrounded) {
-          // Just landed on ice: slide in direction from previous platform
-          let slideSpeed = Math.min(moveSpeed * 0.8, maxSpeedX); // Respect max speed
-          let dir = 0;
-          if (this._lastPlatformX !== null && currentPlatform) {
-            dir = Math.sign(currentPlatform.x - this._lastPlatformX);
-            if (dir === 0) dir = 1; // Default to right if perfectly vertical
-          } else {
-            dir = Math.sign(this._lastAirVX) || 1;
-          }
-          this.sprite.setVelocityX(slideSpeed * dir);
-          this._lockedAirVX = slideSpeed * dir;
-          
-          // Start random sliding timer
-          this._iceSlideTimer = Math.random() * 180 + 60; // 1-4 seconds at 60fps
-          this._iceSlideDirection = Math.random() < 0.5 ? -1 : 1;
-        }
-        
-        // Random sliding behavior on ice when no input
-        if (this._iceSlideTimer > 0) {
-          this._iceSlideTimer--;
-          const slideForce = (moveSpeed * GAME_CONFIG.ICE_SLIDE_FORCE) * this._iceSlideDirection;
-          let currentVX = this.sprite.body.velocity.x;
-          
-          // Debug logging for slide force
-          if (Math.random() < 0.02) {
-            console.log(`Applying ice slide: force=${slideForce.toFixed(2)}, currentVX=${currentVX.toFixed(2)}, timer=${this._iceSlideTimer}`);
-          }
-          
-          currentVX += slideForce;
-          // Clamp to max speed
-          currentVX = Phaser.Math.Clamp(currentVX, -maxSpeedX, maxSpeedX);
-          this.sprite.setVelocityX(currentVX);
-          
-          // Occasionally change slide direction
-          if (Math.random() < GAME_CONFIG.ICE_DIRECTION_CHANGE_CHANCE) {
-            this._iceSlideDirection *= -1;
-            this._iceSlideTimer = Math.random() * 120 + 30; // Reset timer
-          }
-        } else {
-          // Start new random slide period only if player is not moving horizontally
-          const currentVX = this.sprite.body.velocity.x;
-          const isNearlyStationary = Math.abs(currentVX) < moveSpeed * 0.3; // Increased threshold from 0.2 to 0.3
-          
-          // Debug logging
-          if (Math.random() < 0.1) { // Log occasionally
-            console.log(`Ice check: currentVX=${currentVX.toFixed(2)}, threshold=${(moveSpeed * 0.3).toFixed(2)}, stationary=${isNearlyStationary}, slideChance=${GAME_CONFIG.ICE_SLIDE_CHANCE}`);
-          }
-          
-          if (isNearlyStationary && Math.random() < GAME_CONFIG.ICE_SLIDE_CHANCE) {
-            this._iceSlideTimer = Math.random() * 120 + 60;
-            this._iceSlideDirection = Math.random() < 0.5 ? -1 : 1;
-            console.log(`Starting ice slide! Timer=${this._iceSlideTimer}, direction=${this._iceSlideDirection}`);
-          }
-        }
-        
-        // On ice platforms, maintain more momentum and slide more
-        const currentVX = this.sprite.body.velocity.x;
-        if (Math.abs(currentVX) > moveSpeed * 0.1) {
-          // Reduce velocity more quickly on ice to prevent excessive sliding
-          let newVX = currentVX * 0.15; // Increased decay from 0.99 to 0.95 (5% per frame instead of 1%)
-          newVX = Phaser.Math.Clamp(newVX, -maxSpeedX, maxSpeedX);
-          this.sprite.setVelocityX(newVX);
-        }
-      } else if (friction > 1.0) {
-        // Reset ice sliding when not on ice
-        this._iceSlideTimer = 0;
-        // High friction platforms (dirt): stop very quickly when no input
-        const currentVX = this.sprite.body.velocity.x;
-        // More aggressive stopping on higher friction
-        const stopFactor = Math.min(0.7, friction - 0.8); // Higher friction = more aggressive stopping
-        this.sprite.setVelocityX(currentVX * stopFactor);
-        this._lockedAirVX = 0;
       } else {
-        // Reset ice sliding when not on ice
-        this._iceSlideTimer = 0;
+        // Handle ice sliding behavior (independent of platform detection)
+        if (this._iceSlideTimer > 0) {
+          // Stop sliding if player starts falling or makes any input
+          const isFalling = this.sprite.body.velocity.y > 5; // Small threshold to avoid micro-movements
+          const hasInput = leftPressed || rightPressed;
+          
+          if (isFalling || hasInput) {
+            this._iceSlideTimer = 0;
+            if (hasInput) {
+              console.log(`Ice sliding stopped due to player input`);
+            } else if (isFalling) {
+              console.log(`Ice sliding stopped due to falling (vy=${this.sprite.body.velocity.y.toFixed(1)})`);
+            }
+          } else {
+            this._iceSlideTimer--;
+            const slideForce = (moveSpeed * GAME_CONFIG.ICE_SLIDE_FORCE) * this._iceSlideDirection;
+            let currentVX = this.sprite.body.velocity.x;
+            
+            // Debug logging for slide force
+            if (Math.random() < 0.02) {
+              console.log(`Applying ice slide: force=${slideForce.toFixed(2)}, currentVX=${currentVX.toFixed(2)}, timer=${this._iceSlideTimer}`);
+            }
+            
+            currentVX += slideForce;
+            // Clamp to max speed
+            currentVX = Phaser.Math.Clamp(currentVX, -maxSpeedX, maxSpeedX);
+            this.sprite.setVelocityX(currentVX);
+            
+            // Occasionally change slide direction (if enabled)
+            if (Math.random() < GAME_CONFIG.ICE_DIRECTION_CHANGE_CHANCE) {
+              this._iceSlideDirection *= -1;
+              this._iceSlideTimer = Math.random() * 120 + 30; // Reset timer
+            }
+          }
+        }
+        
+        // Platform-specific behavior when no input and no active sliding
+        if (onLowFriction && this._iceSlideTimer === 0) {
+          if (!this._wasGrounded) {
+            // Just landed on ice: slide in direction from previous platform
+            let slideSpeed = Math.min(moveSpeed * 0.8, maxSpeedX); // Respect max speed
+            let dir = 0;
+            if (this._lastPlatformX !== null && currentPlatform) {
+              dir = Math.sign(currentPlatform.x - this._lastPlatformX);
+              if (dir === 0) dir = 1; // Default to right if perfectly vertical
+            } else {
+              dir = Math.sign(this._lastAirVX) || 1;
+            }
+            this.sprite.setVelocityX(slideSpeed * dir);
+            this._lockedAirVX = slideSpeed * dir;
+            
+            // Start random sliding timer
+            this._iceSlideTimer = Math.random() * 180 + 60; // 1-4 seconds at 60fps
+            this._iceSlideDirection = Math.random() < 0.5 ? -1 : 1;
+          } else {
+            // Start new random slide period only if player is not moving horizontally
+            const currentVX = this.sprite.body.velocity.x;
+            const isNearlyStationary = Math.abs(currentVX) < moveSpeed * 0.3; // Increased threshold from 0.2 to 0.3
+            
+            // Debug logging
+            if (Math.random() < 0.1) { // Log occasionally
+              console.log(`Ice check: currentVX=${currentVX.toFixed(2)}, threshold=${(moveSpeed * 0.3).toFixed(2)}, stationary=${isNearlyStationary}, slideChance=${GAME_CONFIG.ICE_SLIDE_CHANCE}`);
+            }
+            
+            if (isNearlyStationary && Math.random() < GAME_CONFIG.ICE_SLIDE_CHANCE) {
+              this._iceSlideTimer = Math.random() * 120 + 60;
+              this._iceSlideDirection = Math.random() < 0.5 ? -1 : 1;
+              console.log(`Starting ice slide! Timer=${this._iceSlideTimer}, direction=${this._iceSlideDirection}`);
+            }
+          }
+        }
+        
+        // Handle platform-specific momentum behavior (when not actively sliding)
+        if (this._iceSlideTimer === 0) {
+          if (onLowFriction) {
+            // On ice platforms, maintain more momentum and slide more
+            const currentVX = this.sprite.body.velocity.x;
+            if (Math.abs(currentVX) > moveSpeed * 0.1) {
+              // Reduce velocity more quickly on ice to prevent excessive sliding
+              let newVX = currentVX * 0.15;
+              newVX = Phaser.Math.Clamp(newVX, -maxSpeedX, maxSpeedX);
+              this.sprite.setVelocityX(newVX);
+            }
+          } else if (friction > 1.0) {
+            // High friction platforms (dirt): stop very quickly when no input
+            const currentVX = this.sprite.body.velocity.x;
+            // More aggressive stopping on higher friction
+            const stopFactor = Math.min(0.7, friction - 0.8); // Higher friction = more aggressive stopping
+            this.sprite.setVelocityX(currentVX * stopFactor);
+            this._lockedAirVX = 0;
+          }
+        }
       }
       // Track last platform position for next jump
       if (currentPlatform) {

@@ -156,4 +156,16 @@ export class DebrisSystem {
       scene
     );
   }
+
+  reset() {
+    // Clear all debris
+    if (this.debrisGroup) {
+      this.debrisGroup.clear(true, true);
+    }
+
+    // Reset spawn timer
+    this.nextDebrisAt = 0;
+
+    console.log("DebrisSystem reset complete");
+  }
 }

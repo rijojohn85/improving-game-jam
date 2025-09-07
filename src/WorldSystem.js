@@ -10,6 +10,7 @@ export class WorldSystem {
   }
 
   initialize(scene) {
+    // Create platform group
     this.platforms = scene.physics.add.staticGroup();
 
     // Start platforms (use medium size for starting consistency)
@@ -28,6 +29,8 @@ export class WorldSystem {
 
     // Seed upward
     for (let i = 0; i < 20; i++) this.spawnPlatformAbove();
+
+    return this.platforms;
   }
 
   selectRandomPlatformSize(heightClimbed = 0) {
@@ -339,7 +342,8 @@ export class WorldSystem {
     camera,
     player,
     coinSystem = null,
-    healthPackSystem = null
+    healthPackSystem = null,
+    checkpointSystem = null
   ) {
     const camTop = camera.scrollY;
 
@@ -384,5 +388,35 @@ export class WorldSystem {
 
   refreshPlatformBodies() {
     this.platforms.children.iterate((p) => p && p.refreshBody());
+  }
+
+  reset() {
+    // Clear all platforms
+    this.platforms.clear(true, true);
+
+    // Reset position tracking
+    this.minY = GAME_CONFIG.BASE_Y;
+    this.topX = GAME_CONFIG.WIDTH / 2;
+
+    // Regenerate initial platforms
+    this.generateInitialPlatforms();
+
+    console.log("WorldSystem reset complete");
+  }
+
+  generateInitialPlatforms() {
+    // Start platforms (use medium size for starting consistency)
+    for (let i = 0; i < 6; i++) {
+      const x = 60 + i * 70;
+      const y = GAME_CONFIG.BASE_Y - (i % 2) * 40;
+      const platform = this.platforms.create(x, y, "platform_medium");
+      platform.platformWidth = 120;
+    }
+
+    // Initial top
+    this.setTopFromGroup();
+
+    // Seed upward
+    for (let i = 0; i < 20; i++) this.spawnPlatformAbove();
   }
 }

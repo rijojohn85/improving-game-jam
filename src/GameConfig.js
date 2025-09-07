@@ -24,8 +24,8 @@ export const GAME_CONFIG = {
   AIR_DECELERATION: 0.985, // How much velocity decays when not pressing keys in air (slower decay)
 
   // Ice platform sliding settings
-  ICE_SLIDE_FORCE: 0.01, // How strong the random sliding force is (as fraction of move speed) - reduced from 0.15
-  ICE_SLIDE_CHANCE: 0.4, // Chance per frame to start sliding (at 60fps)
+  ICE_SLIDE_FORCE: 0.0001, // How strong the random sliding force is (as fraction of move speed) - reduced from 0.05
+  ICE_SLIDE_CHANCE: 0.05, // Chance per frame to start sliding (at 60fps)
   ICE_DIRECTION_CHANGE_CHANCE: 0.000, // Chance per frame to change slide direction - reduced from 0.005
 
   // World streaming
@@ -54,6 +54,11 @@ export const GAME_CONFIG = {
   POINTS_PER_METER: 10,
   COIN_POINTS: 50,
   BASE_Y: 680,
+
+  // Lives and checkpoint system
+  MAX_LIVES: 3,
+  CHECKPOINT_INTERVAL_METERS: 250,
+  CHECKPOINT_SIZE: 32,
 
   // Coin system
   COIN_SPAWN_CHANCE: 0.7,
@@ -143,5 +148,12 @@ export const COLORS = {
     DARK: "#CC2222", // Dark red shadow
     BASE: "#FFFFFF", // White background
     BORDER: "#222222", // Dark border
+  },
+  CHECKPOINT: {
+    BASE: "#00AA00", // Green base
+    LIGHT: "#00FF00", // Bright green light
+    DARK: "#006600", // Dark green shadow
+    INACTIVE: "#444444", // Gray when inactive
+    POLE: "#666666", // Flag pole color
   },
 };

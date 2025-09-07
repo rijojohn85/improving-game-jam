@@ -17,6 +17,17 @@ export const GAME_CONFIG = {
   MAX_SPEED_X: 380,
   MARGIN_X: 48,
 
+  // Air control settings
+  AIR_CONTROL_STRENGTH: 0.8, // How much control you have in air (0-1)
+  AIR_ACCELERATION: 400, // How fast you can change direction in air (increased for more responsiveness)
+  AIR_MAX_SPEED_MULT: 1.3, // Multiplier for max speed in air (increased for more mobility)
+  AIR_DECELERATION: 0.985, // How much velocity decays when not pressing keys in air (slower decay)
+
+  // Ice platform sliding settings
+  ICE_SLIDE_FORCE: 0.0001, // How strong the random sliding force is (as fraction of move speed) - reduced from 0.05
+  ICE_SLIDE_CHANCE: 0.05, // Chance per frame to start sliding (at 60fps)
+  ICE_DIRECTION_CHANGE_CHANCE: 0.000, // Chance per frame to change slide direction - reduced from 0.005
+
   // World streaming
   SPAWN_AHEAD: 1200,
   KEEP_BELOW: 1800,
@@ -95,11 +106,24 @@ export const COLORS = {
     NEAR: 0x162234,
   },
   PLATFORM: {
+    // Dirt (default)
     BASE: 0x6b5846,
     HIGHLIGHT: 0x8e745c,
     SHADOW: 0x4a3b2c,
     BRICK: 0x7a644f,
     PIT: 0x5a4738,
+    // Stone
+    STONE_BASE: 0x888c8e,
+    STONE_HIGHLIGHT: 0xbfc6c7,
+    STONE_SHADOW: 0x5a5e60,
+    STONE_BRICK: 0xa0a4a6,
+    STONE_PIT: 0x7a7e80,
+    // Ice
+    ICE_BASE: 0x9be6ff,
+    ICE_HIGHLIGHT: 0xe0f7ff,
+    ICE_SHADOW: 0x5fd0ff,
+    ICE_BRICK: 0xb3f0ff,
+    ICE_PIT: 0x7fdfff,
   },
   PLAYER: {
     SKIN: "#f3c999",

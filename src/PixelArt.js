@@ -62,11 +62,29 @@ export class PixelArt {
 
   static createPlatformTextures(scene) {
     GAME_CONFIG.PLATFORM_SIZES.forEach((platformInfo) => {
+      // Dirt (default)
       PixelArt.makePixelPlatformTexture(
         scene,
         platformInfo.width,
         platformInfo.height,
-        platformInfo.key
+        platformInfo.key,
+        'dirt'
+      );
+      // Stone
+      PixelArt.makePixelPlatformTexture(
+        scene,
+        platformInfo.width,
+        platformInfo.height,
+        platformInfo.key + '_stone',
+        'stone'
+      );
+      // Ice
+      PixelArt.makePixelPlatformTexture(
+        scene,
+        platformInfo.width,
+        platformInfo.height,
+        platformInfo.key + '_ice',
+        'ice'
       );
     });
   }
@@ -75,24 +93,47 @@ export class PixelArt {
     scene,
     width = 120,
     height = 18,
-    key = "platform"
+    key = "platform",
+    type = "dirt"
   ) {
     const { PLATFORM } = COLORS;
     const g = scene.add.graphics();
 
+    // Choose palette
+    let base, highlight, shadow, brick, pit;
+    if (type === 'stone') {
+      base = PLATFORM.STONE_BASE;
+      highlight = PLATFORM.STONE_HIGHLIGHT;
+      shadow = PLATFORM.STONE_SHADOW;
+      brick = PLATFORM.STONE_BRICK;
+      pit = PLATFORM.STONE_PIT;
+    } else if (type === 'ice') {
+      base = PLATFORM.ICE_BASE;
+      highlight = PLATFORM.ICE_HIGHLIGHT;
+      shadow = PLATFORM.ICE_SHADOW;
+      brick = PLATFORM.ICE_BRICK;
+      pit = PLATFORM.ICE_PIT;
+    } else {
+      base = PLATFORM.BASE;
+      highlight = PLATFORM.HIGHLIGHT;
+      shadow = PLATFORM.SHADOW;
+      brick = PLATFORM.BRICK;
+      pit = PLATFORM.PIT;
+    }
+
     // Base block
-    g.fillStyle(PLATFORM.BASE, 1);
+    g.fillStyle(base, 1);
     g.fillRect(0, 0, width, height);
 
     // Top highlight (2px)
-    g.fillStyle(PLATFORM.HIGHLIGHT, 1);
+    g.fillStyle(highlight, 1);
     g.fillRect(0, 0, width, 2);
     // Bottom shadow (2px)
-    g.fillStyle(PLATFORM.SHADOW, 1);
+    g.fillStyle(shadow, 1);
     g.fillRect(0, height - 2, width, 2);
 
     // "Bricks" as blocks proportional to platform size
-    g.fillStyle(PLATFORM.BRICK, 0.9);
+    g.fillStyle(brick, 0.9);
     const blockWidth = Math.max(6, Math.floor(width / 20));
     const blockHeight = Math.max(3, Math.floor(height / 6));
     for (let y = 3; y <= height - 6; y += blockHeight + 1) {
@@ -106,7 +147,7 @@ export class PixelArt {
     }
 
     // Small pits proportional to platform size
-    g.fillStyle(PLATFORM.PIT, 0.7);
+    g.fillStyle(pit, 0.7);
     const numPits = Math.floor(width / 8);
     for (let i = 0; i < numPits; i++) {
       const x = 4 + Math.floor(Math.random() * (width - 8));

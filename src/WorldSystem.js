@@ -13,25 +13,79 @@ export class WorldSystem {
     // Create platform group
     this.platforms = scene.physics.add.staticGroup();
 
-    // Generate initial platforms
-    this.generateInitialPlatforms();
+    // Start platforms (use medium size for starting consistency)
+    for (let i = 0; i < 6; i++) {
+      const x = 60 + i * 70;
+      const y = GAME_CONFIG.BASE_Y - (i % 2) * 40;
+      const platform = this.platforms.create(x, y, "platform_medium");
+      platform.platformWidth = 120;
+      platform.platformType = "dirt"; // Starting platforms are dirt
+      platform.damageMultiplier = 0.7;
+      platform.friction = 1.2;
+    }
+
+    // Initial top
+    this.setTopFromGroup();
+
+    // Seed upward
+    for (let i = 0; i < 20; i++) this.spawnPlatformAbove();
 
     return this.platforms;
   }
 
-  selectRandomPlatformSize() {
+  selectRandomPlatformSize(heightClimbed = 0) {
+    // Scale platform sizes based on height climbed
+    let sizeScale = 1.0;
+    let weights = [...GAME_CONFIG.PLATFORM_WEIGHTS]; // Copy default weights [0.3, 0.5, 0.2] = [small, medium, large]
+    
+    if (heightClimbed < 1000) {
+      // Early game: Make platforms bigger for easier learning (120% to 100%)
+      const easyFactor = (1000 - heightClimbed) / 1000; // 1.0 to 0.0
+      sizeScale = 1.0 + (easyFactor * 0.3); // Scale up to 130% at start
+      
+      // Bias towards larger platforms in early game
+      weights = [
+        0.1 * (1 - easyFactor) + 0.0 * easyFactor,  // small: 10% to 0%
+        0.3 * (1 - easyFactor) + 0.2 * easyFactor,  // medium: 30% to 20%
+        0.6 * (1 - easyFactor) + 0.8 * easyFactor   // large: 60% to 80%
+      ];
+    } else if (heightClimbed > 2500) {
+      // Late game: Start scaling down platforms more aggressively after 2500px
+      const difficultyFactor = Math.min(0.9, (heightClimbed - 2500) / 5000); // Scale down to 10% over 5000px
+      sizeScale = 1.0 - difficultyFactor;
+      
+      // Bias towards smaller platforms in late game
+      weights = [
+        0.3 + 0.5 * difficultyFactor,  // small: 30% to 80%
+        0.5 - 0.3 * difficultyFactor,  // medium: 50% to 20%
+        0.2 - 0.2 * difficultyFactor   // large: 20% to 0%
+      ];
+    }
+    
+    // Debug logging occasionally
+    if (Math.random() < 0.1) {
+      console.log(`Platform scaling: height=${Math.floor(heightClimbed)}px, scale=${sizeScale.toFixed(2)}, weights=[${weights.map(w => w.toFixed(2)).join(', ')}]`);
+    }
+    
+    // Create scaled platform sizes
+    const scaledSizes = GAME_CONFIG.PLATFORM_SIZES.map(size => ({
+      width: Math.max(50, Math.floor(size.width * sizeScale)), // Minimum width of 50px (reduced for late game)
+      height: size.height,
+      key: size.key
+    }));
+    
     const random = Math.random();
     let cumulativeWeight = 0;
 
-    for (let i = 0; i < GAME_CONFIG.PLATFORM_SIZES.length; i++) {
-      cumulativeWeight += GAME_CONFIG.PLATFORM_WEIGHTS[i];
+    for (let i = 0; i < scaledSizes.length; i++) {
+      cumulativeWeight += weights[i];
       if (random <= cumulativeWeight) {
-        return GAME_CONFIG.PLATFORM_SIZES[i];
+        return scaledSizes[i];
       }
     }
 
-    // Fallback to medium size
-    return GAME_CONFIG.PLATFORM_SIZES[1];
+    // Fallback to medium size (scaled)
+    return scaledSizes[1];
   }
 
   setTopFromGroup() {
@@ -50,11 +104,15 @@ export class WorldSystem {
   }
 
   spawnPlatformAbove(coinSystem = null, healthPackSystem = null) {
+
     const gap = Phaser.Math.Between(GAME_CONFIG.GAP_MIN, GAME_CONFIG.GAP_MAX);
     const reach = this.maxHorizontalReachForGap(gap);
 
-    // Select random platform size
-    const platformSize = this.selectRandomPlatformSize();
+    // Calculate height climbed for platform scaling
+    const heightForScaling = GAME_CONFIG.BASE_Y - (this.minY - gap);
+
+    // Select random platform size with height-based scaling
+    const platformSize = this.selectRandomPlatformSize(heightForScaling);
 
     // Get the width of the previous platform for spacing calculations
     const lastPlatform = this.platforms.getLast(true);
@@ -70,10 +128,51 @@ export class WorldSystem {
       prevPlatformWidth
     );
     const ny = this.minY - gap;
-    const platform = this.platforms.create(nx, ny, platformSize.key);
 
-    // Store platform width for spacing calculations
+    // --- Platform type selection logic ---
+    // Phase 1: first 1500px (BASE_Y - ny < 1500)
+    // Phase 2: next 1500px (1500 <= BASE_Y - ny < 3000)
+    // Phase 3: BASE_Y - ny >= 3000
+    const heightClimbed = GAME_CONFIG.BASE_Y - ny;
+    let dirtProb = 0.8, stoneProb = 0.2, iceProb = 0.0;
+    if (heightClimbed < 1500) {
+      dirtProb = 0.8; stoneProb = 0.2; iceProb = 0.0;
+    } else if (heightClimbed < 3000) {
+      // Scale to stone 80%, dirt 15%, ice 5%
+      const t = (heightClimbed - 1500) / 1500; // 0 to 1
+      dirtProb = 0.8 - 0.65 * t; // 0.8 -> 0.15
+      stoneProb = 0.2 + 0.6 * t; // 0.2 -> 0.8
+      iceProb = 0.0 + 0.05 * t; // 0.0 -> 0.05
+    } else {
+      dirtProb = 0.02; stoneProb = 0.08; iceProb = 0.90;
+    }
+    // Pick type
+    const r = Math.random();
+    let platformType = "dirt";
+    if (r < dirtProb) platformType = "dirt";
+    else if (r < dirtProb + stoneProb) platformType = "stone";
+    else platformType = "ice";
+
+    // Choose sprite key based on type (customize as needed)
+    let platformKey = platformSize.key;
+    if (platformType === "stone") platformKey = platformSize.key + "_stone";
+    else if (platformType === "ice") platformKey = platformSize.key + "_ice";
+
+    const platform = this.platforms.create(nx, ny, platformKey);
     platform.platformWidth = platformSize.width;
+    platform.platformType = platformType;
+
+    // Assign platform properties
+    if (platformType === "stone") {
+      platform.damageMultiplier = 1.5; // Example: 1.5x damage
+      platform.friction = 1.0;
+    } else if (platformType === "ice") {
+      platform.damageMultiplier = 1.0;
+      platform.friction = 0.5; // Low friction
+    } else {
+      platform.damageMultiplier = 0.7;
+      platform.friction = 1.2;
+    }
 
     // Chance to spawn a coin in a risky but reachable position
     if (coinSystem && Math.random() < GAME_CONFIG.COIN_SPAWN_CHANCE) {

@@ -4,7 +4,8 @@
   "private": true,
   "main": "main.js",
   "scripts": {
-    "start": "electron ."
+    "start": "electron .",
+    "dev": "npx http-server -c-1 -p 8080 ."
   },
   "dependencies": {
     "@electron/remote": "^2.1.3",

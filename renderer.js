@@ -337,7 +337,7 @@ function drawBlock(b, ghost = false) {
   ctx.fill();
   // label
   ctx.fillStyle = "#0c1325";
-  ctx.font = "bold 12px system-ui";
+  ctx.font = "bold 12px 'Press Start 2P', monospace, Arial, Helvetica, sans-serif";
   ctx.textAlign = "center";
   ctx.textBaseline = "middle";
   const cx = b.x + b.w / 2,

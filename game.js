@@ -20,7 +20,7 @@ import { StartScene } from "./src/StartScene.js";
 export class GameScene extends Phaser.Scene {
   constructor() {
     super({ key: "GameScene" });
-    
+
     // Initialize all game systems
     this.audioSystem = new AudioSystem();
     this.scoringSystem = new ScoringSystem();
@@ -31,7 +31,7 @@ export class GameScene extends Phaser.Scene {
     this.healthPackSystem = new HealthPackSystem();
     this.checkpointSystem = new CheckpointSystem();
     this.bootSystem = new BootSystem();
-    
+
     // Game state variables
     this.mtnFar = null;
     this.mtnMid = null;
@@ -44,27 +44,27 @@ export class GameScene extends Phaser.Scene {
   // Preload function - loads all textures
   preload() {
     // Load player sprites first
-    this.load.image('stand', './sprites/stand.png');
-    this.load.image('left1', './sprites/left1.png');
-    this.load.image('left2', './sprites/left2.png');
-    this.load.image('right1', './sprites/right1.png');
-    this.load.image('right2', './sprites/right2.png');
-    
+    this.load.image("stand", "./sprites/stand.png");
+    this.load.image("left1", "./sprites/left1.png");
+    this.load.image("left2", "./sprites/left2.png");
+    this.load.image("right1", "./sprites/right1.png");
+    this.load.image("right2", "./sprites/right2.png");
+
     // Load item sprites
-    this.load.image('coin1', './sprites/coin1.png');
-    this.load.image('coin2', './sprites/coin2.png');
-    this.load.image('coin3', './sprites/coin3.png');
-    this.load.image('medi1', './sprites/medi1.png');
-    this.load.image('medi2', './sprites/medi2.png');
-    this.load.image('medi3', './sprites/medi3.png');
-    this.load.image('boot1', './sprites/boot1.png');
-    this.load.image('boot2', './sprites/boot2.png');
-    this.load.image('boot3', './sprites/boot3.png');
-    this.load.image('boot4', './sprites/boot4.png');
-    this.load.image('heart', './sprites/heart.png');
-    
+    this.load.image("coin1", "./sprites/coin1.png");
+    this.load.image("coin2", "./sprites/coin2.png");
+    this.load.image("coin3", "./sprites/coin3.png");
+    this.load.image("medi1", "./sprites/medi1.png");
+    this.load.image("medi2", "./sprites/medi2.png");
+    this.load.image("medi3", "./sprites/medi3.png");
+    this.load.image("boot1", "./sprites/boot1.png");
+    this.load.image("boot2", "./sprites/boot2.png");
+    this.load.image("boot3", "./sprites/boot3.png");
+    this.load.image("boot4", "./sprites/boot4.png");
+    this.load.image("heart", "./sprites/heart.png");
+
     PixelArt.preloadAllTextures(this);
-    this.load.image('background', './background.png');
+    this.load.image("background", "./background.png");
   }
 
   // Create function - initializes the game world and systems
@@ -117,7 +117,7 @@ export class GameScene extends Phaser.Scene {
 
     // Initialize all game systems
     this.worldSystem.initialize(this);
-    
+
     const playerSprite = this.player.initialize(
       this,
       W / 2,
@@ -143,10 +143,30 @@ export class GameScene extends Phaser.Scene {
       this.scoringSystem,
       this
     );
-    this.coinSystem.setupCollisions(this.player, this.scoringSystem, this.audioSystem, this);
-    this.healthPackSystem.setupCollisions(this.player, this.scoringSystem, this.audioSystem, this);
-    this.checkpointSystem.setupCollisions(this.player, this.scoringSystem, this.audioSystem, this);
-    this.bootSystem.setupCollisions(this.player, this.scoringSystem, this.audioSystem, this);
+    this.coinSystem.setupCollisions(
+      this.player,
+      this.scoringSystem,
+      this.audioSystem,
+      this
+    );
+    this.healthPackSystem.setupCollisions(
+      this.player,
+      this.scoringSystem,
+      this.audioSystem,
+      this
+    );
+    this.checkpointSystem.setupCollisions(
+      this.player,
+      this.scoringSystem,
+      this.audioSystem,
+      this
+    );
+    this.bootSystem.setupCollisions(
+      this.player,
+      this.scoringSystem,
+      this.audioSystem,
+      this
+    );
 
     // Setup camera
     const cam = this.cameras.main;
@@ -161,18 +181,22 @@ export class GameScene extends Phaser.Scene {
     this.setupDebugToggle();
 
     // Debug text for velocity
-    this.debugText = this.add.text(10, 10, '', {
-      font: '16px monospace',
-      fill: '#fff',
-      backgroundColor: 'rgba(0,0,0,0.5)',
-      padding: { x: 6, y: 2 },
-    }).setScrollFactor(0, 0).setDepth(1000).setVisible(this.debugVisible);
+    this.debugText = this.add
+      .text(10, 10, "", {
+        font: "16px monospace",
+        fill: "#fff",
+        backgroundColor: "rgba(0,0,0,0.5)",
+        padding: { x: 6, y: 2 },
+      })
+      .setScrollFactor(0, 0)
+      .setDepth(1000)
+      .setVisible(this.debugVisible);
   }
 
   // Setup parallax background
   setupBackground() {
     const { WIDTH: W, HEIGHT: H } = GAME_CONFIG;
-    
+
     this.skyImg = this.add
       .image(-50, -50, "background")
       .setOrigin(0, 0)
@@ -197,7 +221,7 @@ export class GameScene extends Phaser.Scene {
 
   // Setup debug toggle functionality
   setupDebugToggle() {
-    this.input.keyboard.on('keydown-D', () => {
+    this.input.keyboard.on("keydown-D", () => {
       this.debugVisible = !this.debugVisible;
       if (this.debugText) {
         this.debugText.setVisible(this.debugVisible);
@@ -215,10 +239,13 @@ export class GameScene extends Phaser.Scene {
     if (this.debugText && this.debugVisible && this.player.getSprite()) {
       const vx = this.player.getSprite().body.velocity.x.toFixed(1);
       const vy = this.player.getSprite().body.velocity.y.toFixed(1);
-      
+
       // Get current platform info using scoring system helper
-      const platformInfo = this.scoringSystem.getCurrentPlatform(this.player, this);
-      
+      const platformInfo = this.scoringSystem.getCurrentPlatform(
+        this.player,
+        this
+      );
+
       // Calculate friction effects and max speed
       let speedScale = 1.0;
       let maxSpeedMult = 1.0;
@@ -232,21 +259,32 @@ export class GameScene extends Phaser.Scene {
         speedScale = Math.max(0.5, 1.2 - platformInfo.friction * 0.4);
         maxSpeedMult = Math.max(0.4, 0.9 - platformInfo.friction * 0.3);
       }
-      
+
       // Check if player is sliding on ice
-      const isSliding = this.player._iceSlideTimer > 0 && platformInfo.friction < 0.7;
-      const slideInfo = isSliding ? `\nICE SLIDE: ${this.player._iceSlideTimer.toFixed(0)}f dir:${this.player._iceSlideDirection}` : "";
-      
+      const isSliding =
+        this.player._iceSlideTimer > 0 && platformInfo.friction < 0.7;
+      const slideInfo = isSliding
+        ? `\nICE SLIDE: ${this.player._iceSlideTimer.toFixed(0)}f dir:${
+            this.player._iceSlideDirection
+          }`
+        : "";
+
       // Get damage debug info from scoring system
       const dmgInfo = this.scoringSystem.getDamageDebugInfo();
 
       this.debugText.setText(
         `vx: ${vx}\nvy: ${vy}` +
-        `\nfriction: ${platformInfo.friction.toFixed(2)} (${platformInfo.platformType})` +
-        `\nspeed: ${speedScale.toFixed(2)}x max: ${maxSpeedMult.toFixed(2)}x` +
-        `\nmax speed: ${(GAME_CONFIG.MAX_SPEED_X * maxSpeedMult).toFixed(1)}px/s` +
-        slideInfo +
-        (dmgInfo ? `\n${dmgInfo}` : "")
+          `\nfriction: ${platformInfo.friction.toFixed(2)} (${
+            platformInfo.platformType
+          })` +
+          `\nspeed: ${speedScale.toFixed(2)}x max: ${maxSpeedMult.toFixed(
+            2
+          )}x` +
+          `\nmax speed: ${(GAME_CONFIG.MAX_SPEED_X * maxSpeedMult).toFixed(
+            1
+          )}px/s` +
+          slideInfo +
+          (dmgInfo ? `\n${dmgInfo}` : "")
       );
     }
 
@@ -340,7 +378,7 @@ export class GameScene extends Phaser.Scene {
         this.player
       );
       if (result.isDead) {
-        this.scoringSystem.gameOver(this);
+        this.scoringSystem.gameOver(this, this.audioSystem);
       }
     }
   }

@@ -39,10 +39,10 @@ export class ScoringSystem {
 
     // Save system
     this.saveSystem = new SaveSystem();
-    
+
     // Slip comment debounce
     this.lastSlipCommentTime = 0;
-    
+
     // Checkpoint comment debounce
     this.lastCheckpointCommentTime = 0;
     
@@ -61,10 +61,10 @@ export class ScoringSystem {
   initialize(scene) {
     // Store reference to scene for creating UI elements
     this.scene = scene;
-    
+
     // Create canvas-based UI elements
     this.createCanvasUI(scene);
-    
+
     this.setHealth(GAME_CONFIG.MAX_HEALTH);
     this.resetScore();
     this.updateLivesDisplay();
@@ -77,118 +77,143 @@ export class ScoringSystem {
 
   createCanvasUI(scene) {
     const { WIDTH, HEIGHT } = GAME_CONFIG;
-    
+
     // Create UI container for all HUD elements
-    const uiContainer = scene.add.container(0, 0).setScrollFactor(0).setDepth(1000);
-    
+    const uiContainer = scene.add
+      .container(0, 0)
+      .setScrollFactor(0)
+      .setDepth(1000);
+
     // First line: Height (left) and Score (right) - BIGGER TEXT
-    this.heightText = scene.add.text(10, 10, 'Height: 0m', {
-      fontSize: '12px',
-      fill: '#ffffff',
-      fontFamily: '"Press Start 2P"',
-      backgroundColor: 'rgba(0,0,0,0.7)',
-      padding: { x: 3, y: 2 }
-    }).setScrollFactor(0).setDepth(1001);
-    
-    this.scoreText = scene.add.text(WIDTH - 10, 10, 'Score: 0', {
-      fontSize: '12px',
-      fill: '#fbbf24',
-      fontFamily: '"Press Start 2P"',
-      backgroundColor: 'rgba(0,0,0,0.7)',
-      padding: { x: 3, y: 2 }
-    }).setOrigin(1, 0).setScrollFactor(0).setDepth(1001);
-    
+    this.heightText = scene.add
+      .text(10, 10, "Height: 0m", {
+        fontSize: "12px",
+        fill: "#ffffff",
+        fontFamily: '"Press Start 2P"',
+        backgroundColor: "rgba(0,0,0,0.7)",
+        padding: { x: 3, y: 2 },
+      })
+      .setScrollFactor(0)
+      .setDepth(1001);
+
+    this.scoreText = scene.add
+      .text(WIDTH - 10, 10, "Score: 0", {
+        fontSize: "12px",
+        fill: "#fbbf24",
+        fontFamily: '"Press Start 2P"',
+        backgroundColor: "rgba(0,0,0,0.7)",
+        padding: { x: 3, y: 2 },
+      })
+      .setOrigin(1, 0)
+      .setScrollFactor(0)
+      .setDepth(1001);
+
     // Second line: Health bar LEFT ALIGNED with health text after it
     const healthBarStartX = 10;
-    
+
     // Health bar background with border (left aligned)
-    this.healthBarBorder = scene.add.rectangle(healthBarStartX, 35, 122, 14, 0x222222)
-      .setOrigin(0, 0.5).setScrollFactor(0).setDepth(1001);
-    
-    this.healthBar = scene.add.rectangle(healthBarStartX + 1, 35, 120, 12, 0x444444)
-      .setOrigin(0, 0.5).setScrollFactor(0).setDepth(1002);
-    
+    this.healthBarBorder = scene.add
+      .rectangle(healthBarStartX, 35, 122, 14, 0x222222)
+      .setOrigin(0, 0.5)
+      .setScrollFactor(0)
+      .setDepth(1001);
+
+    this.healthBar = scene.add
+      .rectangle(healthBarStartX + 1, 35, 120, 12, 0x444444)
+      .setOrigin(0, 0.5)
+      .setScrollFactor(0)
+      .setDepth(1002);
+
     // Health bar fill with gradient effect (left aligned)
-    this.healthBarFill = scene.add.rectangle(healthBarStartX + 1, 35, 120, 12, 0x00ff44)
-      .setOrigin(0, 0.5).setScrollFactor(0).setDepth(1003);
-    
+    this.healthBarFill = scene.add
+      .rectangle(healthBarStartX + 1, 35, 120, 12, 0x00ff44)
+      .setOrigin(0, 0.5)
+      .setScrollFactor(0)
+      .setDepth(1003);
+
     // Health bar shine effect (left aligned)
-    this.healthBarShine = scene.add.rectangle(healthBarStartX + 1, 31, 120, 4, 0xffffff, 0.3)
-      .setOrigin(0, 0.5).setScrollFactor(0).setDepth(1004);
-    
+    this.healthBarShine = scene.add
+      .rectangle(healthBarStartX + 1, 31, 120, 4, 0xffffff, 0.3)
+      .setOrigin(0, 0.5)
+      .setScrollFactor(0)
+      .setDepth(1004);
+
     // Health text (positioned after health bar) - BIGGER SIZE
-    this.healthText = scene.add.text(healthBarStartX + 135, 35, '100', {
-      fontSize: '16px',
-      fill: '#00ff44',
-      fontFamily: '"Press Start 2P"',
-      backgroundColor: 'rgba(0,0,0,0.7)',
-      padding: { x: 4, y: 3 }
-    }).setOrigin(0, 0.5).setScrollFactor(0).setDepth(1001);
-    
+    this.healthText = scene.add
+      .text(healthBarStartX + 135, 35, "100", {
+        fontSize: "16px",
+        fill: "#00ff44",
+        fontFamily: '"Press Start 2P"',
+        backgroundColor: "rgba(0,0,0,0.7)",
+        padding: { x: 4, y: 3 },
+      })
+      .setOrigin(0, 0.5)
+      .setScrollFactor(0)
+      .setDepth(1001);
+
     // Third line: Lives (left) and Boots (right) - BIGGER TEXT
-    this.livesText = scene.add.text(10, 60, 'Lives:', {
-      fontSize: '12px',
-      fill: '#ef4444',
-      fontFamily: '"Press Start 2P"',
-      backgroundColor: 'rgba(0,0,0,0.7)',
-      padding: { x: 3, y: 2 }
-    }).setScrollFactor(0).setDepth(1001);
-    
+    this.livesText = scene.add
+      .text(10, 60, "Lives:", {
+        fontSize: "12px",
+        fill: "#ef4444",
+        fontFamily: '"Press Start 2P"',
+        backgroundColor: "rgba(0,0,0,0.7)",
+        padding: { x: 3, y: 2 },
+      })
+      .setScrollFactor(0)
+      .setDepth(1001);
+
     // Create heart sprites for lives display
     this.heartSprites = [];
     for (let i = 0; i < GAME_CONFIG.MAX_LIVES; i++) {
-      const heart = scene.add.image(100 + (i * 22), 68, 'heart')
+      const heart = scene.add
+        .image(100 + i * 22, 68, "heart")
         .setDisplaySize(20, 20)
         .setScrollFactor(0)
         .setDepth(1001);
       this.heartSprites.push(heart);
     }
-    
-    this.bootText = scene.add.text(WIDTH - 10, 60, 'Boots: 0/15', {
-      fontSize: '12px',
-      fill: '#D2B48C',
-      fontFamily: '"Press Start 2P"',
-      backgroundColor: 'rgba(0,0,0,0.7)',
-      padding: { x: 3, y: 2 }
-    }).setOrigin(1, 0).setScrollFactor(0).setDepth(1001);
-    
-    // Fourth line: Coins counter (right aligned)
-    this.coinText = scene.add.text(WIDTH - 10, 85, 'Coins: 0', {
-      fontSize: '12px',
-      fill: '#FFD700',
-      fontFamily: '"Press Start 2P"',
-      backgroundColor: 'rgba(0,0,0,0.7)',
-      padding: { x: 3, y: 2 }
-    }).setOrigin(1, 0).setScrollFactor(0).setDepth(1001);
+
+    this.bootText = scene.add
+      .text(WIDTH - 10, 60, "Boots: 0/15", {
+        fontSize: "12px",
+        fill: "#D2B48C",
+        fontFamily: '"Press Start 2P"',
+        backgroundColor: "rgba(0,0,0,0.7)",
+        padding: { x: 3, y: 2 },
+      })
+      .setOrigin(1, 0)
+      .setScrollFactor(0)
+      .setDepth(1001);
   }
 
   setHealth(newValue) {
     this.health = Phaser.Math.Clamp(newValue, 0, GAME_CONFIG.MAX_HEALTH);
-    
+
     const healthPercent = this.health / GAME_CONFIG.MAX_HEALTH;
-    
+
     // Determine colors based on health level
     let fillColor, textColor;
     if (healthPercent > 0.6) {
       fillColor = 0x00ff44; // Bright green
-      textColor = '#00ff44';
+      textColor = "#00ff44";
     } else if (healthPercent > 0.3) {
       fillColor = 0xffaa00; // Orange
-      textColor = '#ffaa00';
+      textColor = "#ffaa00";
     } else {
       fillColor = 0xff2244; // Bright red
-      textColor = '#ff2244';
+      textColor = "#ff2244";
     }
-    
+
     // Update health text with color and pulsing effect for low health
     if (this.healthText) {
       this.healthText.setText(`${this.health}`);
-      this.healthText.setStyle({ 
-        fill: textColor, 
+      this.healthText.setStyle({
+        fill: textColor,
         fontFamily: '"Press Start 2P"',
-        fontSize: '16px'
+        fontSize: "16px",
       });
-      
+
       // Add pulsing effect for critical health
       if (healthPercent <= 0.2) {
         this.healthText.scene.tweens.add({
@@ -196,7 +221,7 @@ export class ScoringSystem {
           alpha: 0.4,
           duration: 300,
           yoyo: true,
-          repeat: -1
+          repeat: -1,
         });
       } else {
         // Stop pulsing if health is above critical
@@ -204,7 +229,7 @@ export class ScoringSystem {
         this.healthText.setAlpha(1);
       }
     }
-    
+
     // Update health bar fill (left aligned positioning)
     if (this.healthBarFill) {
       const healthBarStartX = 10;
@@ -212,15 +237,15 @@ export class ScoringSystem {
       this.healthBarFill.setFillStyle(fillColor);
       // Keep it left-aligned, no need to adjust position
     }
-    
+
     // Update health bar shine effect (left aligned positioning)
     if (this.healthBarShine) {
       this.healthBarShine.setScale(healthPercent, 1);
       // Make shine more prominent on higher health
-      this.healthBarShine.setAlpha(0.2 + (healthPercent * 0.3));
+      this.healthBarShine.setAlpha(0.2 + healthPercent * 0.3);
       // Keep it left-aligned, no need to adjust position
     }
-    
+
     return this.health <= 0; // Return true if player should die
   }
 
@@ -263,7 +288,9 @@ export class ScoringSystem {
 
   updateBootDisplay() {
     if (this.bootText) {
-      this.bootText.setText(`Boots: ${this.bootSlipPrevention}/${GAME_CONFIG.BOOT_MAX_STACK}`);
+      this.bootText.setText(
+        `Boots: ${this.bootSlipPrevention}/${GAME_CONFIG.BOOT_MAX_STACK}`
+      );
     }
   }
 
@@ -273,7 +300,7 @@ export class ScoringSystem {
     }
   }
 
-  showFloatingText(scene, x, y, text, color = '#ffffff') {
+  showFloatingText(scene, x, y, text, color = "#ffffff") {
     if (!scene) return;
 
     // Handle multi-line text by splitting on \n
@@ -361,15 +388,31 @@ export class ScoringSystem {
     if (currentTime - this.lastSlipCommentTime < SLIP_COMMENT_COOLDOWN) {
       return; // Still in cooldown period, don't show comment
     }
-    
+
     this.lastSlipCommentTime = currentTime;
 
     // Random slip comments to show when player starts slipping
-    const slipComments = ['Whoa!', 'Slipping!', "Can't hold on!", 'Too icy!', 'Yikes!', 'Not good…', 'Ahh!', 'Steady… steady…'];
-    const randomComment = slipComments[Math.floor(Math.random() * slipComments.length)];
-    
+    const slipComments = [
+      "Whoa!",
+      "Slipping!",
+      "Can't hold on!",
+      "Too icy!",
+      "Yikes!",
+      "Not good…",
+      "Ahh!",
+      "Steady… steady…",
+    ];
+    const randomComment =
+      slipComments[Math.floor(Math.random() * slipComments.length)];
+
     // Show the slip comment above the player
-    this.showFloatingText(scene, playerX, playerY - 40, randomComment, '#87CEEB');
+    this.showFloatingText(
+      scene,
+      playerX,
+      playerY - 40,
+      randomComment,
+      "#87CEEB"
+    );
   }
 
   showCheckpointComment(scene, playerX, playerY) {
@@ -378,11 +421,14 @@ export class ScoringSystem {
     // Debounce checkpoint comments - only show one every 3 seconds
     const currentTime = scene.time.now;
     const CHECKPOINT_COMMENT_COOLDOWN = 3000; // 3 seconds in milliseconds
-    
-    if (currentTime - this.lastCheckpointCommentTime < CHECKPOINT_COMMENT_COOLDOWN) {
+
+    if (
+      currentTime - this.lastCheckpointCommentTime <
+      CHECKPOINT_COMMENT_COOLDOWN
+    ) {
       return; // Still in cooldown period, don't show comment
     }
-    
+
     this.lastCheckpointCommentTime = currentTime;
 
     // Random checkpoint comments to show when player reaches a checkpoint
@@ -525,16 +571,27 @@ export class ScoringSystem {
       bestHeight: this.bestHeight,
     };
 
-    console.log(`Game saved at checkpoint: ${checkpoint.heightMeters}m - Respawn position: (${Math.floor(checkpoint.spawnX)}, ${Math.floor(checkpoint.spawnY - 100)})`);
+    console.log(
+      `Game saved at checkpoint: ${
+        checkpoint.heightMeters
+      }m - Respawn position: (${Math.floor(checkpoint.spawnX)}, ${Math.floor(
+        checkpoint.spawnY - 100
+      )})`
+    );
   }
 
-  loseLife() {
+  loseLife(audioSystem = null) {
     this.lives--;
-    
+
+    // Play death sound effect
+    if (audioSystem) {
+      audioSystem.sfxPlayerDeath();
+    }
+
     // Add a dramatic effect when losing a life
     if (this.heartSprites && this.heartSprites[this.lives]) {
       const lostHeart = this.heartSprites[this.lives];
-      
+
       // Animate the heart being lost
       if (lostHeart.scene && lostHeart.scene.tweens) {
         lostHeart.scene.tweens.add({
@@ -543,15 +600,15 @@ export class ScoringSystem {
           scaleY: 1.5,
           alpha: 0.3,
           duration: 300,
-          ease: 'Power2.easeOut',
+          ease: "Power2.easeOut",
           onComplete: () => {
             lostHeart.setScale(1);
             lostHeart.setTint(0x444444);
-          }
+          },
         });
       }
     }
-    
+
     this.updateLivesDisplay();
     return this.lives <= 0; // Return true if no lives left
   }
@@ -596,7 +653,7 @@ export class ScoringSystem {
   applyFallDamage(dropPx, audioSystem, scene, player = null) {
     const excess = Math.max(0, dropPx - GAME_CONFIG.SAFE_DROP_PX);
     let baseDmg = (excess / 50) * GAME_CONFIG.DMG_PER_50PX;
-    
+
     // Get platform type and damage multiplier using helper function
     const platformInfo = this.getCurrentPlatform(player, scene);
     const dmgMultiplier = platformInfo.damageMultiplier;
@@ -613,7 +670,7 @@ export class ScoringSystem {
       dmgMultiplier: dmgMultiplier,
       finalDmg: finalDmg,
       platformType: platformType,
-      friction: friction
+      friction: friction,
     };
 
     if (audioSystem) {
@@ -625,19 +682,30 @@ export class ScoringSystem {
       if (scene && player) {
         const playerSprite = player.getSprite ? player.getSprite() : player;
         if (playerSprite) {
-          const playerX = playerSprite.x || (playerSprite.body ? playerSprite.body.x + playerSprite.body.width/2 : 0);
-          const playerY = playerSprite.y || (playerSprite.body ? playerSprite.body.y : 0);
-          
+          const playerX =
+            playerSprite.x ||
+            (playerSprite.body
+              ? playerSprite.body.x + playerSprite.body.width / 2
+              : 0);
+          const playerY =
+            playerSprite.y || (playerSprite.body ? playerSprite.body.y : 0);
+
           // Show damage amount
-          this.showFloatingText(scene, playerX, playerY - 30, `-${finalDmg} Health`, '#FF0000');
-          
+          this.showFloatingText(
+            scene,
+            playerX,
+            playerY - 30,
+            `-${finalDmg} Health`,
+            "#FF0000"
+          );
+
           // Show random damage comment on the left side
           const damageComments = ['Ouch!',  'Oof!', 'That hurt!', 'Not again…', 'Yikes!', 'Careful!', 'Whoa!', 'Stay sharp!'];
           const randomComment = damageComments[Math.floor(Math.random() * damageComments.length)];
           this.showFloatingText(scene, playerX - 60, playerY - 20, randomComment, '#FF0000');
         }
       }
-      
+
       if (scene) {
         scene.cameras.main.flash(120, 255, 64, 64);
       }
@@ -655,7 +723,7 @@ export class ScoringSystem {
 
     // Show floating text if player position is available
     if (scene && playerX !== null && playerY !== null) {
-      this.showFloatingText(scene, playerX, playerY - 30, '+1 Coin', '#FFD700');
+      this.showFloatingText(scene, playerX, playerY - 30, "+1 Coin", "#FFD700");
     }
 
     // Increment coin counter
@@ -671,9 +739,11 @@ export class ScoringSystem {
       this.lastCoinMilestone = currentMilestone;
       const bonusPoints = GAME_CONFIG.COIN_MILESTONE_BONUS; // Bonus points for every 100 coins
       this.addScore(bonusPoints);
-      
-      console.log(`Coin milestone reached! ${this.coinsCollected} coins collected. Bonus: ${bonusPoints} points`);
-      
+
+      console.log(
+        `Coin milestone reached! ${this.coinsCollected} coins collected. Bonus: ${bonusPoints} points`
+      );
+
       // Special visual effect for milestone
       if (scene) {
         scene.cameras.main.flash(200, 255, 215, 0, false); // Golden flash
@@ -691,7 +761,13 @@ export class ScoringSystem {
     if (this.health >= GAME_CONFIG.MAX_HEALTH) {
       // Show "Health is Full" message if player position is available
       if (scene && playerX !== null && playerY !== null) {
-        this.showFloatingText(scene, playerX, playerY - 30, 'Health is Full', '#FFFF00');
+        this.showFloatingText(
+          scene,
+          playerX,
+          playerY - 30,
+          "Health is Full",
+          "#FFFF00"
+        );
       }
       return;
     }
@@ -702,7 +778,13 @@ export class ScoringSystem {
 
     // Show floating text if player position is available
     if (scene && playerX !== null && playerY !== null) {
-      this.showFloatingText(scene, playerX, playerY - 30, `+${GAME_CONFIG.HEALTH_PACK_HEAL_AMOUNT} Health`, '#00FF00');
+      this.showFloatingText(
+        scene,
+        playerX,
+        playerY - 30,
+        `+${GAME_CONFIG.HEALTH_PACK_HEAL_AMOUNT} Health`,
+        "#00FF00"
+      );
     }
 
     // Heal the player
@@ -741,8 +823,12 @@ export class ScoringSystem {
     }
 
     // Add boot slip prevention uses, but cap at maximum
-    const newBootCount = this.bootSlipPrevention + GAME_CONFIG.BOOT_SLIP_PREVENTION_USES;
-    this.bootSlipPrevention = Math.min(newBootCount, GAME_CONFIG.BOOT_MAX_STACK);
+    const newBootCount =
+      this.bootSlipPrevention + GAME_CONFIG.BOOT_SLIP_PREVENTION_USES;
+    this.bootSlipPrevention = Math.min(
+      newBootCount,
+      GAME_CONFIG.BOOT_MAX_STACK
+    );
     this.updateBootDisplay();
 
     // Add some score for collecting boot
@@ -762,7 +848,9 @@ export class ScoringSystem {
     if (this.bootSlipPrevention > 0) {
       this.bootSlipPrevention--;
       this.updateBootDisplay();
-      console.log(`Boot slip prevention used! Remaining: ${this.bootSlipPrevention}`);
+      console.log(
+        `Boot slip prevention used! Remaining: ${this.bootSlipPrevention}`
+      );
       return true;
     }
     return false;
@@ -821,21 +909,21 @@ export class ScoringSystem {
     return { damage: 0, isDead: false };
   }
 
-  gameOver(scene) {
+  gameOver(scene, audioSystem = null) {
     if (scene) {
       scene.cameras.main.shake(200, 0.01);
 
       const gameOverUI = this.createGameOverScreen(scene);
 
       scene.time.delayedCall(220, () => {
-        const isGameOver = this.loseLife();
+        const isGameOver = this.loseLife(audioSystem);
 
         if (isGameOver) {
           // Show final game over screen
-          this.showFinalGameOverScreen(scene);
+          this.showFinalGameOverScreen(scene, audioSystem);
         } else {
           // Respawn at checkpoint
-          this.respawnPlayer(scene);
+          this.respawnPlayer(scene, audioSystem);
         }
       });
     }
@@ -843,27 +931,49 @@ export class ScoringSystem {
 
   getDamageDebugInfo() {
     if (!this.lastDamageDebug) return "";
-    
+
     const d = this.lastDamageDebug;
-    return `drop: ${d.drop.toFixed(1)}px excess: ${d.excess.toFixed(1)}px` +
-           `\ndmg: (${d.excess.toFixed(1)}/50)*${GAME_CONFIG.DMG_PER_50PX}*${d.dmgMultiplier.toFixed(1)} = ${d.finalDmg}` +
-           `\nplatform: ${d.platformType} friction: ${d.friction.toFixed(2)}`;
+    return (
+      `drop: ${d.drop.toFixed(1)}px excess: ${d.excess.toFixed(1)}px` +
+      `\ndmg: (${d.excess.toFixed(1)}/50)*${
+        GAME_CONFIG.DMG_PER_50PX
+      }*${d.dmgMultiplier.toFixed(1)} = ${d.finalDmg}` +
+      `\nplatform: ${d.platformType} friction: ${d.friction.toFixed(2)}`
+    );
   }
 
   // Helper function to detect current platform under player
   getCurrentPlatform(player, scene) {
-    if (!player || !scene || !scene.worldSystem || !scene.worldSystem.platforms) {
-      return { platformType: "unknown", friction: 1.0, damageMultiplier: 1.0, platform: null };
+    if (
+      !player ||
+      !scene ||
+      !scene.worldSystem ||
+      !scene.worldSystem.platforms
+    ) {
+      return {
+        platformType: "unknown",
+        friction: 1.0,
+        damageMultiplier: 1.0,
+        platform: null,
+      };
     }
 
     const playerSprite = player.getSprite();
     if (!playerSprite) {
-      return { platformType: "unknown", friction: 1.0, damageMultiplier: 1.0, platform: null };
+      return {
+        platformType: "unknown",
+        friction: 1.0,
+        damageMultiplier: 1.0,
+        platform: null,
+      };
     }
 
     const px = playerSprite.x;
     // Use the center bottom of the player's physics body
-    const py = playerSprite.y + playerSprite.body.height / 2 + playerSprite.body.height / 2;
+    const py =
+      playerSprite.y +
+      playerSprite.body.height / 2 +
+      playerSprite.body.height / 2;
 
     // Find the platform the player is standing on or very close to
     let closestPlatform = null;
@@ -874,16 +984,19 @@ export class ScoringSystem {
 
       // Check if player is horizontally within platform bounds (with larger tolerance for ice platforms)
       const platformWidth = p.platformWidth || 120;
-      const isIcePlatform = p.platformType === "ice" || (p.friction !== undefined && p.friction < 0.7);
+      const isIcePlatform =
+        p.platformType === "ice" ||
+        (p.friction !== undefined && p.friction < 0.7);
       const tolerance = isIcePlatform ? 15 : 5; // Larger tolerance for ice platforms where sliding is expected
-      
+
       const platformLeft = p.x - platformWidth / 2 - tolerance;
       const platformRight = p.x + platformWidth / 2 + tolerance;
-      
+
       if (px >= platformLeft && px <= platformRight) {
         // Check vertical distance (player should be above or very close to platform top)
         const distance = Math.abs(p.y - py);
-        if (distance < minDistance && distance < 20) { // Within 20 pixels vertically
+        if (distance < minDistance && distance < 20) {
+          // Within 20 pixels vertically
           minDistance = distance;
           closestPlatform = p;
         }
@@ -893,13 +1006,24 @@ export class ScoringSystem {
     if (closestPlatform) {
       return {
         platformType: closestPlatform.platformType || "dirt",
-        friction: closestPlatform.friction !== undefined ? closestPlatform.friction : 1.0,
-        damageMultiplier: closestPlatform.damageMultiplier !== undefined ? closestPlatform.damageMultiplier : 1.0,
-        platform: closestPlatform
+        friction:
+          closestPlatform.friction !== undefined
+            ? closestPlatform.friction
+            : 1.0,
+        damageMultiplier:
+          closestPlatform.damageMultiplier !== undefined
+            ? closestPlatform.damageMultiplier
+            : 1.0,
+        platform: closestPlatform,
       };
     }
 
-    return { platformType: "unknown", friction: 1.0, damageMultiplier: 1.0, platform: null };
+    return {
+      platformType: "unknown",
+      friction: 1.0,
+      damageMultiplier: 1.0,
+      platform: null,
+    };
   }
 
   createGameOverScreen(scene) {
@@ -957,7 +1081,12 @@ export class ScoringSystem {
     return { overlay, deathText, livesText };
   }
 
-  showFinalGameOverScreen(scene) {
+  showFinalGameOverScreen(scene, audioSystem = null) {
+    // Play game over sound effect
+    if (audioSystem) {
+      audioSystem.sfxGameOver();
+    }
+
     // Save the score when the game ends
     this.saveSystem.onGameEnd(this.score, this.bestHeight);
 
@@ -1041,10 +1170,16 @@ export class ScoringSystem {
       this.saveSystem.displayLeaderboard(scene);
     });
     leaderboardButton.on("pointerover", () => {
-      leaderboardButton.setStyle({ fill: "#ffffff", backgroundColor: "#004488" });
+      leaderboardButton.setStyle({
+        fill: "#ffffff",
+        backgroundColor: "#004488",
+      });
     });
     leaderboardButton.on("pointerout", () => {
-      leaderboardButton.setStyle({ fill: "#44aaff", backgroundColor: "#002244" });
+      leaderboardButton.setStyle({
+        fill: "#44aaff",
+        backgroundColor: "#002244",
+      });
     });
 
     // Restart button
@@ -1106,9 +1241,14 @@ export class ScoringSystem {
     });
   }
 
-  respawnPlayer(scene) {
+  respawnPlayer(scene, audioSystem = null) {
     // Reset health
     this.setHealth(GAME_CONFIG.MAX_HEALTH);
+
+    // Restart background music when respawning
+    if (audioSystem) {
+      audioSystem.restartMusic();
+    }
 
     // Get respawn position
     const respawnPos = this.respawnAtCheckpoint();
@@ -1119,7 +1259,7 @@ export class ScoringSystem {
       // First disable physics temporarily to ensure clean positioning
       player.body.enable = false;
       player.setPosition(respawnPos.x, respawnPos.y);
-      
+
       // Re-enable physics and set velocity
       player.body.enable = true;
       player.setVelocity(0, -200); // Strong upward velocity to ensure player doesn't fall through platform
@@ -1128,7 +1268,11 @@ export class ScoringSystem {
       scene.cameras.main.setScroll(0, respawnPos.y - GAME_CONFIG.HEIGHT / 2);
     }
 
-    console.log(`Player respawned at checkpoint: ${respawnPos.heightMeters}m at position (${Math.floor(respawnPos.x)}, ${Math.floor(respawnPos.y)})`);
+    console.log(
+      `Player respawned at checkpoint: ${
+        respawnPos.heightMeters
+      }m at position (${Math.floor(respawnPos.x)}, ${Math.floor(respawnPos.y)})`
+    );
   }
 
   resetGame() {
@@ -1142,6 +1286,7 @@ export class ScoringSystem {
     this.falling = false;
     this.fallStartY = 0;
     this.bootSlipPrevention = 0;
+<<<<<<< HEAD
     this.coinsCollected = 0;
     this.lastCoinMilestone = 0;
     
@@ -1162,8 +1307,11 @@ export class ScoringSystem {
     this.lastPlayerPosition = { x: 0, y: 0 };
     this.stationaryTime = 0;
     
+=======
+
+>>>>>>> d21374f9c8e078e4255560e80802ab2192294aa1
     this.updateLivesDisplay();
-    
+
     // Reset heart sprites to full visibility
     if (this.heartSprites && this.heartSprites.length > 0) {
       for (let i = 0; i < this.heartSprites.length; i++) {
@@ -1172,7 +1320,7 @@ export class ScoringSystem {
         this.heartSprites[i].clearTint();
       }
     }
-    
+
     this.updateBootDisplay();
     this.updateCoinDisplay();
     this.updateScoreDisplay();

@@ -10,6 +10,8 @@ function createWindow() {
     height: 820,
     backgroundColor: "#0d0f1a",
     resizable: false,
+    show: false, // Don't show until ready
+    icon: path.join(__dirname, "AppIcon.png"), // Add app icon
     webPreferences: {
       contextIsolation: false, // Allow require in renderer
       nodeIntegration: true, // Enable Node.js in renderer
@@ -19,6 +21,9 @@ function createWindow() {
       // Disable VSync to allow uncapped frame rates
       disableVSync: true,
       enableRemoteModule: true, // Enable remote module
+      // Add performance optimizations
+      experimentalFeatures: true,
+      v8CacheOptions: 'bypassHeatCheck'
     },
   });
 
@@ -26,10 +31,18 @@ function createWindow() {
   require("@electron/remote/main").enable(win.webContents);
 
   win.setMenuBarVisibility(false);
+  
+  // Show window when ready to prevent white flash
+  win.once('ready-to-show', () => {
+    win.show();
+  });
+  
   win.loadFile(path.join(__dirname, "index.html"));
 
-  // Open DevTools to see any errors
-  win.webContents.openDevTools();
+  // Only open DevTools in development
+  if (process.env.NODE_ENV === 'development') {
+    win.webContents.openDevTools();
+  }
 }
 
 app.whenReady().then(createWindow);

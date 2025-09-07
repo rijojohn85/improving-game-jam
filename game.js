@@ -392,7 +392,7 @@ export class GameScene extends Phaser.Scene {
 (() => {
   const { WIDTH: W, HEIGHT: H } = GAME_CONFIG;
 
-  // Game configuration
+  // Game configuration with performance optimizations
   const config = {
     type: Phaser.AUTO,
     width: W,
@@ -400,13 +400,44 @@ export class GameScene extends Phaser.Scene {
     backgroundColor: GAME_CONFIG.BACKGROUND_COLOR,
     physics: {
       default: "arcade",
-      arcade: { gravity: { y: GAME_CONFIG.GRAVITY_Y }, debug: false },
+      arcade: { 
+        gravity: { y: GAME_CONFIG.GRAVITY_Y }, 
+        debug: false,
+        // Performance optimizations
+        tileBias: 16,
+        forceX: false
+      },
     },
-    render: { pixelArt: true, antialias: false, roundPixels: true },
+    render: { 
+      pixelArt: true, 
+      antialias: false, 
+      roundPixels: true,
+      // Performance optimizations
+      powerPreference: "high-performance",
+      batchSize: 4096
+    },
     pixelArt: true,
     scene: [StartScene, GameScene], // Start with StartScene, then GameScene
+    // Add FPS configuration
+    fps: {
+      target: 60,
+      forceSetTimeOut: true
+    },
+    // Disable unnecessary features for performance
+    disableContextMenu: true,
+    // Audio configuration
+    audio: {
+      disableWebAudio: false,
+      context: false
+    }
   };
 
-  // Start the game
-  new Phaser.Game(config);
+  // Start the game when DOM is ready
+  if (document.readyState === 'loading') {
+    document.addEventListener('DOMContentLoaded', () => {
+      new Phaser.Game(config);
+    });
+  } else {
+    new Phaser.Game(config);
+  }
 })();

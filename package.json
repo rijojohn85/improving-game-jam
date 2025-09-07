@@ -6,6 +6,7 @@
   "homepage": "./",
   "scripts": {
     "start": "electron .",
+    "start-dev": "NODE_ENV=development electron .",
     "dev": "npx http-server -c-1 -p 8080 .",
     "build": "electron-builder",
     "build:win": "electron-builder --win --publish=never",
@@ -44,7 +45,12 @@
     ],
     "mac": {
       "category": "public.app-category.games",
+      "icon": "AppIcon.png",
       "target": [
+        {
+          "target": "dir",
+          "arch": ["x64", "arm64"]
+        },
         {
           "target": "dmg",
           "arch": ["x64", "arm64"]
@@ -56,6 +62,7 @@
       ]
     },
     "win": {
+      "icon": "AppIcon.png",
       "target": [
         {
           "target": "nsis",
@@ -69,6 +76,7 @@
     },
     "linux": {
       "category": "Game",
+      "icon": "AppIcon.png",
       "target": [
         {
           "target": "AppImage",

@@ -3,19 +3,75 @@
   <head>
     <meta charset="UTF-8" />
     <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-    <title>Improving Game Jam</title>
-    <!-- Google Fonts for retro gaming feel -->
+    <title>Pixel Climber</title>
+    <!-- Favicon -->
+    <link rel="icon" type="image/png" href="./AppIcon.png" />
+    <link rel="apple-touch-icon" href="./AppIcon.png" />
+    <!-- Preload critical resources -->
+    <link rel="preload" href="./node_modules/phaser/dist/phaser.min.js" as="script" />
+    <link rel="preload" href="./game.js" as="script" />
+    <!-- Google Fonts for retro gaming feel - async load to not block -->
     <link rel="preconnect" href="https://fonts.googleapis.com" />
     <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
     <link
       href="https://fonts.googleapis.com/css2?family=Press+Start+2P&display=swap"
       rel="stylesheet"
+      media="print" onload="this.media='all'"
     />
+    <noscript><link href="https://fonts.googleapis.com/css2?family=Press+Start+2P&display=swap" rel="stylesheet"></noscript>
     <link rel="stylesheet" href="style.css" />
+    <!-- Add loading style -->
+    <style>
+      #loading {
+        position: fixed;
+        top: 0;
+        left: 0;
+        width: 100%;
+        height: 100%;
+        background: #0d0f1a;
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        z-index: 9999;
+        color: white;
+        font-family: 'Courier New', monospace;
+      }
+      .spinner {
+        border: 3px solid #333;
+        border-top: 3px solid #fff;
+        border-radius: 50%;
+        width: 40px;
+        height: 40px;
+        animation: spin 1s linear infinite;
+        margin-right: 15px;
+      }
+      @keyframes spin {
+        0% { transform: rotate(0deg); }
+        100% { transform: rotate(360deg); }
+      }
+    </style>
   </head>
   <body>
+    <!-- Loading screen -->
+    <div id="loading">
+      <div class="spinner"></div>
+      <div>Loading Pixel Climber...</div>
+    </div>
+    
     <!-- Load Phaser locally -->
     <script src="./node_modules/phaser/dist/phaser.min.js"></script>
     <script type="module" src="./game.js"></script>
+    
+    <!-- Remove loading screen when game starts -->
+    <script>
+      window.addEventListener('load', () => {
+        setTimeout(() => {
+          const loading = document.getElementById('loading');
+          if (loading) {
+            loading.style.display = 'none';
+          }
+        }, 500); // Small delay to ensure game is initialized
+      });
+    </script>
   </body>
 </html>

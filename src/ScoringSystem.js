@@ -1,6 +1,7 @@
 // ScoringSystem.js - Handles scoring, health, and UI updates
 
 import { GAME_CONFIG } from "./GameConfig.js";
+import { SaveSystem } from "./SaveSystem.js";
 
 export class ScoringSystem {
   constructor() {
@@ -22,6 +23,9 @@ export class ScoringSystem {
     this.hpFillEl = null;
     this.scoreText = null;
     this.livesText = null;
+
+    // Save system
+    this.saveSystem = new SaveSystem();
   }
 
   initialize() {
@@ -34,6 +38,9 @@ export class ScoringSystem {
     this.setHealth(GAME_CONFIG.MAX_HEALTH);
     this.resetScore();
     this.updateLivesDisplay();
+
+    // Initialize save system
+    this.saveSystem.initialize();
   }
 
   setHealth(newValue) {
@@ -77,13 +84,13 @@ export class ScoringSystem {
     this.currentCheckpoint = checkpoint;
     this.checkpointData = {
       x: checkpoint.spawnX,
-      y: checkpoint.spawnY,
+      y: checkpoint.spawnY - 100, // Store a position well above the checkpoint for safe respawning (checkpoint is 30px above platform, so this puts player 130px above platform)
       heightMeters: checkpoint.heightMeters,
       score: this.score,
       bestHeight: this.bestHeight,
     };
 
-    console.log(`Game saved at checkpoint: ${checkpoint.heightMeters}m`);
+    console.log(`Game saved at checkpoint: ${checkpoint.heightMeters}m - Respawn position: (${Math.floor(checkpoint.spawnX)}, ${Math.floor(checkpoint.spawnY - 100)})`);
   }
 
   loseLife() {
@@ -96,7 +103,7 @@ export class ScoringSystem {
     if (this.checkpointData) {
       return {
         x: this.checkpointData.x,
-        y: this.checkpointData.y - 50, // Spawn slightly above checkpoint
+        y: this.checkpointData.y, // Now using the pre-calculated safe spawn position
         heightMeters: this.checkpointData.heightMeters,
       };
     }
@@ -278,6 +285,9 @@ export class ScoringSystem {
   }
 
   showFinalGameOverScreen(scene) {
+    // Save the score when the game ends
+    this.saveSystem.onGameEnd(this.score, this.bestHeight);
+
     // Create permanent game over screen
     const overlay = scene.add.rectangle(
       GAME_CONFIG.WIDTH / 2,
@@ -293,7 +303,7 @@ export class ScoringSystem {
     // Game Over title
     const gameOverText = scene.add.text(
       GAME_CONFIG.WIDTH / 2,
-      150,
+      120,
       "GAME OVER",
       {
         fontSize: "36px",
@@ -310,10 +320,10 @@ export class ScoringSystem {
     // Final score
     const finalScoreText = scene.add.text(
       GAME_CONFIG.WIDTH / 2,
-      220,
+      180,
       `Final Score: ${this.score.toLocaleString()}`,
       {
-        fontSize: "24px",
+        fontSize: "20px",
         fill: "#ffffff",
         fontFamily: "monospace",
       }
@@ -322,20 +332,47 @@ export class ScoringSystem {
     finalScoreText.setScrollFactor(0);
     finalScoreText.setDepth(1001);
 
-    // Best height
-    const heightText = scene.add.text(
+    // Final height
+    const finalHeightText = scene.add.text(
       GAME_CONFIG.WIDTH / 2,
-      260,
-      `Best Height: ${this.bestHeight}m`,
+      210,
+      `Max Height: ${this.bestHeight}m`,
       {
         fontSize: "20px",
         fill: "#ffffff",
         fontFamily: "monospace",
       }
     );
-    heightText.setOrigin(0.5);
-    heightText.setScrollFactor(0);
-    heightText.setDepth(1001);
+    finalHeightText.setOrigin(0.5);
+    finalHeightText.setScrollFactor(0);
+    finalHeightText.setDepth(1001);
+
+    // Leaderboard button
+    const leaderboardButton = scene.add.text(
+      GAME_CONFIG.WIDTH / 2,
+      280,
+      "VIEW LEADERBOARD",
+      {
+        fontSize: "18px",
+        fill: "#44aaff",
+        fontFamily: "monospace",
+        backgroundColor: "#002244",
+        padding: { x: 15, y: 8 },
+      }
+    );
+    leaderboardButton.setOrigin(0.5);
+    leaderboardButton.setScrollFactor(0);
+    leaderboardButton.setDepth(1001);
+    leaderboardButton.setInteractive({ useHandCursor: true });
+    leaderboardButton.on("pointerdown", () => {
+      this.saveSystem.displayLeaderboard(scene);
+    });
+    leaderboardButton.on("pointerover", () => {
+      leaderboardButton.setStyle({ fill: "#ffffff", backgroundColor: "#004488" });
+    });
+    leaderboardButton.on("pointerout", () => {
+      leaderboardButton.setStyle({ fill: "#44aaff", backgroundColor: "#002244" });
+    });
 
     // Restart button
     const restartButton = scene.add.text(
@@ -406,14 +443,19 @@ export class ScoringSystem {
     // Respawn player at checkpoint
     const player = scene.children.getByName("player");
     if (player) {
+      // First disable physics temporarily to ensure clean positioning
+      player.body.enable = false;
       player.setPosition(respawnPos.x, respawnPos.y);
-      player.setVelocity(0, 0);
+      
+      // Re-enable physics and set velocity
+      player.body.enable = true;
+      player.setVelocity(0, -200); // Strong upward velocity to ensure player doesn't fall through platform
 
       // Move camera to respawn location
       scene.cameras.main.setScroll(0, respawnPos.y - GAME_CONFIG.HEIGHT / 2);
     }
 
-    console.log(`Player respawned at checkpoint: ${respawnPos.heightMeters}m`);
+    console.log(`Player respawned at checkpoint: ${respawnPos.heightMeters}m at position (${Math.floor(respawnPos.x)}, ${Math.floor(respawnPos.y)})`);
   }
 
   resetGame() {

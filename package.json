@@ -1,6 +1,6 @@
 {
   "name": "phaser-vertical-scroll-electron",
-  "version": "0.1.2",
+  "version": "0.1.3",
   "private": true,
   "main": "main.js",
   "homepage": "./",
@@ -24,16 +24,20 @@
     "electron-builder": "^24.13.3"
   },
   "build": {
-    "asar": true,
-    "compression": "maximum",
-    "electronLanguages": ["en-US"],      
-    "files": [
-      "**/*",
-      "!dist/**/*"
-    ],
-    "mac": { "target": [{ "target": "dmg", "arch": ["x64","arm64"] }] },
-    "win": { "target": [{ "target": "nsis", "arch": ["x64"] }] },
-    "linux": { "target": [{ "target": "tar.gz", "arch": ["x64"] }] },
-    "nsis": { "oneClick": false, "allowToChangeInstallationDirectory": true }
+    "win": {
+      "icon": "AppIcon.png",
+      "target": [
+        {
+          "target": "nsis",
+          "arch": [
+            "x64"
+          ]
+        }
+      ]
+    },
+    "nsis": {
+      "oneClick": false,
+      "allowToChangeInstallationDirectory": true
+    }
   }
 }

@@ -85,7 +85,7 @@ export class DebrisSystem {
         scoringSystem.health - GAME_CONFIG.DEBRIS_DMG
       );
       if (isDead) {
-        scoringSystem.gameOver(scene);
+        scoringSystem.gameOver(scene, audioSystem);
       }
     }
   }

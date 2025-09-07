@@ -10,6 +10,9 @@ export class AudioSystem {
     this.muted = false;
     this.musicTimer = null;
     this.audioBuffers = new Map(); // Store loaded audio files
+
+    // Store music oscillators for proper cleanup
+    this.musicOscillators = [];
   }
 
   ensureAudioContext() {
@@ -64,12 +67,12 @@ export class AudioSystem {
   }
 
   async setupAudioUI() {
-    await this.loadAudio('background-music', 'sounds/background-music.mp3');
+    // Start synthesized Mario-style background music instead of loading audio file
+    this.startSynthesizedMusic();
 
     const startMusic = () => {
       this.ensureAudioContext();
       if (this.AC.state === "suspended") this.AC.resume();
-      this.playAudio('background-music', 1, true, this.musicGain);
       window.removeEventListener("pointerdown", startMusic);
       window.removeEventListener("keydown", startMusic);
     };
@@ -90,41 +93,150 @@ export class AudioSystem {
     };
   }
 
-  startMusic() {
+  startSynthesizedMusic() {
     if (this.musicStarted) return;
     this.ensureAudioContext();
 
-    const o1 = this.AC.createOscillator();
-    const o2 = this.AC.createOscillator();
-    o1.type = "sine";
-    o2.type = "triangle";
-    o1.connect(this.musicGain);
-    o2.connect(this.musicGain);
-    o1.start();
-    o2.start();
+    // Create multiple oscillators for a dark atmospheric sound
+    const melody = this.AC.createOscillator();
+    const harmony = this.AC.createOscillator();
+    const bass = this.AC.createOscillator();
 
+    // Store oscillators for proper cleanup
+    this.musicOscillators = [melody, harmony, bass];
+
+    melody.type = "sine"; // Smooth atmospheric lead
+    harmony.type = "triangle";
+    bass.type = "triangle"; // Changed from sawtooth to eliminate static
+
+    // Create gain nodes for volume control
+    const melodyGain = this.AC.createGain();
+    const harmonyGain = this.AC.createGain();
+    const bassGain = this.AC.createGain();
+
+    melodyGain.gain.value = 0.3; // Reduced volume
+    harmonyGain.gain.value = 0.2; // Reduced volume
+    bassGain.gain.value = 0.1; // Much lower bass to eliminate static
+
+    // Connect to music gain
+    melody.connect(melodyGain);
+    harmony.connect(harmonyGain);
+    bass.connect(bassGain);
+
+    melodyGain.connect(this.musicGain);
+    harmonyGain.connect(this.musicGain);
+    bassGain.connect(this.musicGain);
+
+    melody.start();
+    harmony.start();
+    bass.start();
+
+    // Original dark atmospheric melody with lower frequencies
     let i = 0;
-    const notes = [220.0, 233.08, 261.63, 293.66];
-    const fifths = [330.0, 349.23, 392.0, 440.0];
+    // Main melody - mysterious and atmospheric in lower register
+    const melodyNotes = [
+      220.0, 0, 246.94, 0, 261.63, 220.0, 0, 196.0, 0, 0, 220.0, 0, 246.94,
+      261.63, 0, 220.0, 196.0, 0, 0, 174.61, 196.0, 220.0, 0, 0, 246.94, 0,
+      261.63, 0, 293.66, 0, 246.94, 220.0, 0, 196.0, 0, 0, 220.0, 246.94, 0,
+      261.63, 0, 220.0, 196.0, 0, 174.61, 0, 0, 0, 220.0, 0, 246.94, 0, 261.63,
+      220.0, 0, 196.0, 0, 0, 220.0, 0,
+    ]; // Original composition in lower A3-C4 range
+
+    // Harmony line - deep atmospheric chords
+    const harmonyNotes = [
+      146.83, 164.81, 174.61, 196.0, 146.83, 164.81, 174.61, 196.0, 130.81,
+      146.83, 164.81, 174.61, 130.81, 146.83, 164.81, 174.61, 155.56, 174.61,
+      196.0, 220.0, 155.56, 174.61, 196.0, 220.0, 138.59, 155.56, 174.61, 196.0,
+      138.59, 155.56, 174.61, 196.0, 146.83, 164.81, 174.61, 196.0, 146.83,
+      164.81, 174.61, 196.0, 130.81, 146.83, 164.81, 174.61, 130.81, 146.83,
+      164.81, 174.61, 155.56, 174.61, 196.0, 220.0, 155.56, 174.61, 196.0,
+      220.0, 138.59, 155.56, 174.61, 196.0, 138.59, 155.56, 174.61, 196.0,
+    ];
+
+    // Bass line - deep sub-bass foundation
+    const bassNotes = [
+      73.42, 0, 73.42, 0, 82.41, 0, 82.41, 0, 87.31, 0, 87.31, 0, 73.42, 0,
+      65.41, 0, 65.41, 0, 73.42, 0, 73.42, 0, 82.41, 0, 82.41, 0, 87.31, 0,
+      92.5, 0, 92.5, 0, 98.0, 0, 98.0, 0, 87.31, 0, 87.31, 0, 82.41, 0, 73.42,
+      0, 73.42, 0, 65.41, 0, 65.41, 0, 73.42, 0, 73.42, 0, 82.41, 0,
+    ];
 
     this.musicTimer = setInterval(() => {
       if (!this.AC) return;
-      o1.frequency.setTargetAtTime(
-        notes[i % notes.length],
-        this.AC.currentTime,
-        0.08
-      );
-      o2.frequency.setTargetAtTime(
-        fifths[i % fifths.length],
-        this.AC.currentTime,
-        0.08
-      );
+
+      const melodyNote = melodyNotes[i % melodyNotes.length];
+      const harmonyNote = harmonyNotes[i % harmonyNotes.length];
+      const bassNote = bassNotes[i % bassNotes.length];
+
+      // Play melody (if not a rest)
+      if (melodyNote > 0) {
+        melody.frequency.setTargetAtTime(melodyNote, this.AC.currentTime, 0.01);
+      }
+
+      // Play harmony
+      if (harmonyNote > 0) {
+        harmony.frequency.setTargetAtTime(
+          harmonyNote,
+          this.AC.currentTime,
+          0.01
+        );
+      }
+
+      // Play bass (if not a rest)
+      if (bassNote > 0) {
+        bass.frequency.setTargetAtTime(bassNote, this.AC.currentTime, 0.01);
+      }
+
       i++;
-    }, 900);
+    }, 300); // Slower atmospheric pace - 300ms per note for moody feel
 
     this.musicStarted = true;
   }
 
+  startMusic() {
+    // Legacy method - redirect to synthesized music
+    this.startSynthesizedMusic();
+  }
+
+  stopMusic() {
+    // Clear the music timer
+    if (this.musicTimer) {
+      clearInterval(this.musicTimer);
+      this.musicTimer = null;
+    }
+
+    // Stop and disconnect all music oscillators
+    if (this.musicOscillators && this.musicOscillators.length > 0) {
+      this.musicOscillators.forEach((osc) => {
+        try {
+          osc.stop();
+          osc.disconnect();
+        } catch (e) {
+          // Oscillator might already be stopped, ignore error
+        }
+      });
+      this.musicOscillators = [];
+    }
+
+    this.musicStarted = false;
+
+    // Fade out music gain to create smooth stop
+    if (this.musicGain && this.AC) {
+      this.musicGain.gain.setTargetAtTime(0, this.AC.currentTime, 0.3);
+    }
+  }
+  restartMusic() {
+    // Stop any existing music first
+    this.stopMusic();
+
+    // Reset music gain and restart after a brief delay
+    setTimeout(() => {
+      if (this.musicGain && this.AC) {
+        this.musicGain.gain.setTargetAtTime(0.05, this.AC.currentTime, 0.1);
+      }
+      this.startSynthesizedMusic();
+    }, 500); // Small delay to let the stop fade complete
+  }
   sfxTone(freq, dur = 0.08, type = "triangle", vol = 1) {
     this.ensureAudioContext();
     const o = this.AC.createOscillator();
@@ -225,5 +337,37 @@ export class AudioSystem {
     this.sfxTone(659, 0.15, "triangle", 0.5); // E
     this.sfxTone(784, 0.2, "triangle", 0.4); // G
     this.sfxTone(1047, 0.25, "sine", 0.3); // High C
+  }
+
+  sfxPlayerDeath() {
+    // Stop background music when player dies
+    this.stopMusic();
+
+    // Death sound - dramatic descending sweep with noise burst
+    this.sfxSweep(400, 80, 1.2, "square", 0.8); // Dramatic descending sweep
+    this.sfxNoise(0.4, 0.6, 200); // Death rattle noise
+
+    // Add delayed lower tone for finality
+    setTimeout(() => {
+      this.sfxTone(60, 0.8, "sine", 0.4); // Deep final tone
+    }, 200);
+  }
+
+  sfxGameOver() {
+    // Game over sound - dramatic and final
+    // Descending minor chord progression for sadness/finality
+    this.sfxTone(440, 0.8, "triangle", 0.7); // A
+    this.sfxTone(349, 0.9, "triangle", 0.6); // F
+    this.sfxTone(261, 1.0, "triangle", 0.8); // C
+
+    // Add dramatic sweep down
+    setTimeout(() => {
+      this.sfxSweep(200, 60, 1.5, "sine", 0.5);
+    }, 400);
+
+    // Final deep resonant tone
+    setTimeout(() => {
+      this.sfxTone(41, 2.0, "sine", 0.4); // Very low E
+    }, 800);
   }
 }

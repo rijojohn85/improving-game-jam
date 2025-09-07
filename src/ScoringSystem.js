@@ -97,7 +97,7 @@ export class ScoringSystem {
       .setDepth(1001);
 
     this.scoreText = scene.add
-      .text(WIDTH - 10, 10, "Score: 0", {
+      .text(WIDTH - 20, 10, "Score: 0", {
         fontSize: "12px",
         fill: "#fbbf24",
         fontFamily: '"Press Start 2P"',
@@ -175,7 +175,7 @@ export class ScoringSystem {
     }
 
     this.bootText = scene.add
-      .text(WIDTH - 10, 60, "Boots: 0/15", {
+      .text(WIDTH - 20, 60, "Boots: 0/15", {
         fontSize: "12px",
         fill: "#D2B48C",
         fontFamily: '"Press Start 2P"',
@@ -188,7 +188,7 @@ export class ScoringSystem {
 
     // Fourth line: Coin counter (right side)
     this.coinText = scene.add
-      .text(WIDTH - 10, 85, "Coins: 0", {
+      .text(WIDTH - 20, 85, "Coins: 0", {
         fontSize: "12px",
         fill: "#FFD700",
         fontFamily: '"Press Start 2P"',

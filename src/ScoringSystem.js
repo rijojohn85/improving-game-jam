@@ -185,6 +185,19 @@ export class ScoringSystem {
       .setOrigin(1, 0)
       .setScrollFactor(0)
       .setDepth(1001);
+
+    // Fourth line: Coin counter (right side)
+    this.coinText = scene.add
+      .text(WIDTH - 10, 85, "Coins: 0", {
+        fontSize: "12px",
+        fill: "#FFD700",
+        fontFamily: '"Press Start 2P"',
+        backgroundColor: "rgba(0,0,0,0.7)",
+        padding: { x: 3, y: 2 },
+      })
+      .setOrigin(1, 0)
+      .setScrollFactor(0)
+      .setDepth(1001);
   }
 
   setHealth(newValue) {

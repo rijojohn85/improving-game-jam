@@ -4,6 +4,11 @@ import { GAME_CONFIG, COLORS } from "./GameConfig.js";
 
 export class PixelArt {
   static makePixelSky(scene) {
+    // Check if texture already exists
+    if (scene.textures.exists("skytex")) {
+      return;
+    }
+    
     const { WIDTH: W, HEIGHT: H } = GAME_CONFIG;
     const { SKY_BANDS } = COLORS;
 
@@ -30,6 +35,11 @@ export class PixelArt {
   }
 
   static makePixelMountains(scene, key, color, amp = 60, stepX = 4) {
+    // Check if texture already exists
+    if (scene.textures.exists(key)) {
+      return;
+    }
+    
     const { WIDTH: W } = GAME_CONFIG;
 
     // Column-stepped silhouette ridge (blocky)
@@ -96,6 +106,11 @@ export class PixelArt {
     key = "platform",
     type = "dirt"
   ) {
+    // Check if texture already exists
+    if (scene.textures.exists(key)) {
+      return;
+    }
+    
     const { PLATFORM } = COLORS;
     const g = scene.add.graphics();
 
@@ -164,7 +179,18 @@ export class PixelArt {
 
     // 32x48 tiny human, integer size (prevents "air gap" when colliding)
     const key = "player_px_32x48";
+    
+    // Check if texture already exists
+    if (scene.textures.exists(key)) {
+      return key;
+    }
+    
     const tex = scene.textures.createCanvas(key, 32, 48);
+    if (!tex) {
+      console.error(`Failed to create texture: ${key}`);
+      return null;
+    }
+    
     const c = tex.getContext();
 
     // helper draws 2x2 blocks => crunchy pixels
@@ -207,7 +233,18 @@ export class PixelArt {
     const { DEBRIS } = COLORS;
 
     const key = "debris";
+    
+    // Check if texture already exists
+    if (scene.textures.exists(key)) {
+      return;
+    }
+    
     const tex = scene.textures.createCanvas(key, 12, 10); // Increased from 8x7 to 12x10
+    if (!tex) {
+      console.error(`Failed to create texture: ${key}`);
+      return;
+    }
+    
     const c = tex.getContext();
 
     // irregular chunk mask (more realistic rock debris shape)
@@ -254,7 +291,18 @@ export class PixelArt {
 
     const key = "coin";
     const size = COIN_SIZE;
+    
+    // Check if texture already exists
+    if (scene.textures.exists(key)) {
+      return;
+    }
+    
     const canvas = scene.textures.createCanvas(key, size, size);
+    if (!canvas) {
+      console.error(`Failed to create texture: ${key}`);
+      return;
+    }
+    
     const c = canvas.context;
 
     // Create a circular coin shape
@@ -290,7 +338,18 @@ export class PixelArt {
 
     const key = "healthpack";
     const size = HEALTH_PACK_SIZE;
+    
+    // Check if texture already exists
+    if (scene.textures.exists(key)) {
+      return;
+    }
+    
     const canvas = scene.textures.createCanvas(key, size, size);
+    if (!canvas) {
+      console.error(`Failed to create texture: ${key}`);
+      return;
+    }
+    
     const c = canvas.context;
 
     // Create a square health pack with a red cross
@@ -332,7 +391,18 @@ export class PixelArt {
 
     const key = "checkpoint";
     const size = CHECKPOINT_SIZE;
+    
+    // Check if texture already exists
+    if (scene.textures.exists(key)) {
+      return;
+    }
+    
     const canvas = scene.textures.createCanvas(key, size, size);
+    if (!canvas) {
+      console.error(`Failed to create texture: ${key}`);
+      return;
+    }
+    
     const c = canvas.context;
 
     // Flag pole (vertical line)

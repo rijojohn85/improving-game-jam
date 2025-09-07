@@ -51,6 +51,11 @@ export class ScoringSystem {
     
     // Ice boot comment debounce
     this.lastIceBootCommentTime = 0;
+    
+    // Idle comment system
+    this.lastIdleCommentTime = 0;
+    this.lastPlayerPosition = { x: 0, y: 0 };
+    this.stationaryTime = 0; // Time player has been stationary (in milliseconds)
   }
 
   initialize(scene) {
@@ -292,7 +297,7 @@ export class ScoringSystem {
         targets: floatingText,
         y: y - 60,
         alpha: 0,
-        duration: 2500, // Increased from 1500 to 2500ms for better readability
+        duration: 3000, // Increased from 1500 to 2500ms for better readability
         ease: 'Power2.easeOut',
         onComplete: () => {
           floatingText.destroy();
@@ -303,7 +308,7 @@ export class ScoringSystem {
       scene.tweens.add({
         targets: floatingText,
         x: x + Phaser.Math.Between(-20, 20),
-        duration: 2500, // Increased to match the main animation
+        duration: 3000, // Increased to match the main animation
         ease: 'Sine.easeInOut'
       });
     } else {
@@ -351,7 +356,7 @@ export class ScoringSystem {
 
     // Debounce slip comments - only show one every 2 seconds
     const currentTime = scene.time.now;
-    const SLIP_COMMENT_COOLDOWN = 500; // 2 seconds in milliseconds
+    const SLIP_COMMENT_COOLDOWN = 2500; // 2 seconds in milliseconds
     
     if (currentTime - this.lastSlipCommentTime < SLIP_COMMENT_COOLDOWN) {
       return; // Still in cooldown period, don't show comment
@@ -455,6 +460,59 @@ export class ScoringSystem {
     
     // Show the ice boot comment above the player (brown color)
     this.showFloatingText(scene, playerX, playerY - 50, randomComment, '#8B4513');
+  }
+
+  showIdleComment(scene, playerX, playerY, isStationary = false) {
+    if (!scene) return;
+
+    // Idle comments every 30 seconds
+    const currentTime = scene.time.now;
+    const IDLE_COMMENT_COOLDOWN = 30000; // 30 seconds
+    
+    if (currentTime - this.lastIdleCommentTime < IDLE_COMMENT_COOLDOWN) {
+      return; // Still in cooldown period, don't show comment
+    }
+    
+    this.lastIdleCommentTime = currentTime;
+
+    let idleComments;
+    let commentColor = '#ffffff'; // Sky blue for idle comments
+    
+    if (isStationary) {
+      // Comments for when player is stationary
+      idleComments = [
+        'Oh, we\'re just…\nhanging out now?',
+        'Don\'t mind me,\nI\'ll freeze here.',
+        'Any day now,\nboss.',
+        'Should I order pizza\nwhile we wait?',
+        'Great, now I can\ncount snowflakes.',
+        'Peak climbing speed\nright here.',
+        'Resting? I thought\nthis was a game.',
+        'Fine, I\'ll do the heavy\nbreathing myself.',
+        'Guess I\'ll practice my\nslipping in place.',
+        'Can we call this the summit\nand go home?'
+      ];
+    } else {
+      // General idle comments for when player is moving
+      idleComments = [
+        'Another rock…\nhow original.',
+        'Sure, let\'s keep going\nup forever.',
+        'My arms love this,\nreally.',
+        'So… no elevators\non this mountain?',
+        'Peak fitness? More like\npeak nonsense.',
+        'Hope the view\'s worth\nthe back pain.',
+        'Grip, slip, repeat.\nWhat a hobby.',
+        'Because walking on flat ground\nwas too easy.',
+        'Oh joy, more ice.\nMy favorite.',
+        'Is gravity always\nthis clingy?'
+      ];
+    }
+    
+    const randomComment = idleComments[Math.floor(Math.random() * idleComments.length)];
+    
+    // Show idle comment in the middle of the screen below the player
+    const screenCenterX = scene.cameras.main.scrollX + GAME_CONFIG.WIDTH / 2;
+    this.showFloatingText(scene, screenCenterX, playerY + 80, randomComment, commentColor);
   }
 
   saveCheckpoint(checkpoint) {
@@ -576,7 +634,7 @@ export class ScoringSystem {
           // Show random damage comment on the left side
           const damageComments = ['Ouch!',  'Oof!', 'That hurt!', 'Not again…', 'Yikes!', 'Careful!', 'Whoa!', 'Stay sharp!'];
           const randomComment = damageComments[Math.floor(Math.random() * damageComments.length)];
-          this.showFloatingText(scene, playerX - 60, playerY - 20, randomComment, '#87CEEB');
+          this.showFloatingText(scene, playerX - 60, playerY - 20, randomComment, '#FF0000');
         }
       }
       
@@ -712,6 +770,37 @@ export class ScoringSystem {
 
   hasBootSlipPrevention() {
     return this.bootSlipPrevention > 0;
+  }
+
+  updateIdleComments(scene, playerX, playerY, deltaTime) {
+    if (!scene) return;
+    
+    // Check if player has moved significantly
+    const movementThreshold = 5; // pixels
+    const distanceMoved = Math.sqrt(
+      Math.pow(playerX - this.lastPlayerPosition.x, 2) + 
+      Math.pow(playerY - this.lastPlayerPosition.y, 2)
+    );
+    
+    if (distanceMoved > movementThreshold) {
+      // Player is moving, reset stationary timer
+      this.stationaryTime = 0;
+      this.lastPlayerPosition = { x: playerX, y: playerY };
+      
+      // Show general idle comments
+      this.showIdleComment(scene, playerX, playerY, false);
+    } else {
+      // Player is stationary, accumulate time
+      this.stationaryTime += deltaTime;
+      
+      // After 3 seconds of being stationary, start showing stationary comments
+      if (this.stationaryTime > 3000) {
+        this.showIdleComment(scene, playerX, playerY, true);
+      } else {
+        // Still show general idle comments if not stationary long enough
+        this.showIdleComment(scene, playerX, playerY, false);
+      }
+    }
   }
 
   // Fall detection methods
@@ -1067,6 +1156,11 @@ export class ScoringSystem {
     
     // Reset ice boot comment debounce
     this.lastIceBootCommentTime = 0;
+    
+    // Reset idle comment system
+    this.lastIdleCommentTime = 0;
+    this.lastPlayerPosition = { x: 0, y: 0 };
+    this.stationaryTime = 0;
     
     this.updateLivesDisplay();
     

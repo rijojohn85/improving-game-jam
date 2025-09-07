@@ -274,6 +274,9 @@ export class GameScene extends Phaser.Scene {
     // Update scoring and UI
     this.scoringSystem.checkHeightProgress(playerPos.y);
     this.scoringSystem.updateHeightDisplay(playerPos.y);
+    
+    // Update idle comment system
+    this.scoringSystem.updateIdleComments(this, playerPos.x, playerPos.y, this.game.loop.delta);
 
     // Check for checkpoint spawning
     const currentHeightMeters = Math.max(

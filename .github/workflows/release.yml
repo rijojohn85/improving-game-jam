@@ -3,65 +3,93 @@ name: Build and Release Electron App
 on:
   push:
     tags:
-      - 'v*'   # Triggers on version tags like v1.0.0
+      - 'v*'   # Run only when pushing version tags (e.g., v0.1.0)
 
 jobs:
-  build:
-    runs-on: ${{ matrix.os }}
-    strategy:
-      matrix:
-        include:
-          - os: macos-latest
-            args: "--mac dmg --x64 --arm64"
-            artifact: mac
-            patterns: "dist/*.dmg dist/*.zip"
-          - os: windows-latest
-            args: "--win nsis --x64"
-            artifact: windows
-            patterns: "dist/*.exe dist/*.zip"
-          - os: ubuntu-latest
-            args: "--linux AppImage tar.gz --x64"
-            artifact: linux
-            patterns: "dist/*.AppImage dist/*.tar.gz"
-
+  build-win:
+    runs-on: windows-latest
     steps:
       - uses: actions/checkout@v4
-
       - uses: actions/setup-node@v4
         with:
           node-version: 18
           cache: npm
-
       - run: npm ci
-
-      - name: Build Electron App
-        run: npx electron-builder ${{ matrix.args }} --publish never
+      - name: Build Windows installer
+        run: npx electron-builder --win nsis --x64 --publish never
         env:
           CSC_IDENTITY_AUTO_DISCOVERY: false
-
-      - name: Upload OS-specific artifacts
+      - name: List Windows build outputs
+        run: ls -R dist
+      - name: Upload Windows artifacts
         uses: actions/upload-artifact@v4
         with:
-          name: ${{ matrix.artifact }}-build
-          path: ${{ matrix.patterns }}
-          retention-days: 2
+          name: windows-build
+          path: |
+            dist/*.exe
+            dist/*.zip
+
+  build-mac:
+    runs-on: macos-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 18
+          cache: npm
+      - run: npm ci
+      - name: Build macOS installer
+        run: npx electron-builder --mac dmg --x64 --arm64 --publish never
+        env:
+          CSC_IDENTITY_AUTO_DISCOVERY: false
+      - name: List macOS build outputs
+        run: ls -R dist
+      - name: Upload macOS artifacts
+        uses: actions/upload-artifact@v4
+        with:
+          name: mac-build
+          path: |
+            dist/*.dmg
+            dist/*.zip
+
+  build-linux:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 18
+          cache: npm
+      - run: npm ci
+      - name: Build Linux installer
+        run: npx electron-builder --linux AppImage tar.gz --x64 --publish never
+        env:
+          CSC_IDENTITY_AUTO_DISCOVERY: false
+      - name: List Linux build outputs
+        run: ls -R dist
+      - name: Upload Linux artifacts
+        uses: actions/upload-artifact@v4
+        with:
+          name: linux-build
+          path: |
+            dist/*.AppImage
+            dist/*.tar.gz
 
   release:
-    needs: build
+    needs: [build-win, build-mac, build-linux]
     runs-on: ubuntu-latest
     permissions:
       contents: write
 
     steps:
-      - name: Checkout
-        uses: actions/checkout@v4
+      - uses: actions/checkout@v4
 
       - name: Download all artifacts
         uses: actions/download-artifact@v4
         with:
           path: ./artifacts
 
-      - name: List artifact files
+      - name: List all downloaded artifacts (debug)
         run: ls -R ./artifacts
 
       - name: Create GitHub Release

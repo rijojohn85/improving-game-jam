@@ -24,11 +24,52 @@
     "electron-builder": "^24.13.3"
   },
   "build": {
-    "win": {
+    "appId": "com.rijojohn85.pixel-climber",
+    "productName": "Pixel Climber",
+    "directories": {
+      "output": "dist"
+    },
+    "files": [
+      "**/*",
+      "!dist/**/*"
+    ],
+    "mac": {
+      "category": "public.app-category.games",
       "icon": "AppIcon.png",
       "target": [
         {
+          "target": "dmg",
+          "arch": [
+            "x64",
+            "arm64"
+          ]
+        }
+      ]
+    },
+    "win": {
+      "icon": "AppIcon.png",
+      "requestedExecutionLevel": "asInvoker",
+      "target": [
+        {
           "target": "nsis",
+          "arch": [
+            "x64"
+          ]
+        }
+      ]
+    },
+    "linux": {
+      "category": "Game",
+      "icon": "AppIcon.png",
+      "target": [
+        {
+          "target": "AppImage",
+          "arch": [
+            "x64"
+          ]
+        },
+        {
+          "target": "tar.gz",
           "arch": [
             "x64"
           ]
